@@ -1,0 +1,37 @@
+/*------------------------------------------------------------------------*/
+ #include "header.h"
+/*------------------------------------------------------------------------*/
+
+ 1000 ICON                             APP_ICON_FILE
+
+
+ VS_VERSION_INFO                       VERSIONINFO
+ FILEVERSION                           APP_VERSION
+ PRODUCTVERSION                        APP_VERSION
+ FILEFLAGSMASK                         VS_FFI_FILEFLAGSMASK
+ FILEFLAGS                             VS_FF_PRERELEASE
+ FILEOS                                VOS__WINDOWS32
+ FILETYPE                              VFT_APP
+ FILESUBTYPE                           VFT2_UNKNOWN
+
+ BEGIN
+ BLOCK "StringFileInfo"
+ BEGIN
+ BLOCK "000004b0"
+ BEGIN
+ VALUE "ProductName",                  APP_TITLE
+ VALUE "ProductVersion",               APP_VERSION_STR
+ VALUE "FileDescription",              APP_DESCRIPTION
+ VALUE "FileVersion",                  APP_VERSION_STR
+ VALUE "CompanyName",                  APP_AUTHOR
+ VALUE "LegalCopyright",               APP_COPYRIGHT
+ VALUE "Comments",                     APP_COMMENTS
+ END
+ END
+ BLOCK "VarFileInfo"
+ BEGIN
+ VALUE "Translation",                  0x000,0x4b0
+ END
+ END
+
+/*------------------------------------------------------------------------*/
