@@ -64463,9 +64463,6 @@ noscale:
 /*-----------------------------------------------------------------------*/
 
  //V appLabel                            (N x,N y,N w,N h,H fidx,VP fmt,...);
- //PUB _zap zap;
-
-
 
 
 
@@ -79656,7 +79653,7 @@ whatever is possible
 /*-----------------------------------------------------------------------*/
 
 
- B aaZapYield                          (_zap*zap)
+ B aaEzyYield                          (_ezy*ezy)
  {
  B ret;
  H i;
@@ -79668,139 +79665,140 @@ whatever is possible
  #ifdef aa_VERSION
  aa_ZIAG(__FUNCTION__);
  #endif
- if(zap==NULL) { return RET_MISSINGPARM; }
- if(zap->magic!=aaHPP(aaZapYield))
+ if(ezy==NULL) { return RET_MISSINGPARM; }
+ if(ezy->magic!=aaHPP(aaEzyYield))
   {
-  aaMemoryFill(zap,sizeof(_zap),0);
-  zap->magic=aaHPP(aaZapYield);
+  aaMemoryFill(ezy,sizeof(_ezy),0);
+  ezy->magic=aaHPP(aaEzyYield);
   aaFocusToDbg(0);
-  aaInfoGet(&zap->info);
-  for(i=0;i<4;i++)  {  logh=10+(i*3);  if((ret=aaFontCreate(&zap->font[i+0].handle,"consolas",0,-logh,58,NO,NO,5,0))!=YES)       { oops; }  }  //0-3
-  for(i=0;i<4;i++)  {  logh=10+(i*3);  if((ret=aaFontCreate(&zap->font[i+4].handle,"courier new",0,-logh,58,NO,NO,5,0))!=YES)    { oops; }  }  //4-7
-  for(i=0;i<4;i++)  {  logh=10+(i*3);  if((ret=aaFontCreate(&zap->font[i+8].handle,"lucida console",0,-logh,58,NO,NO,5,0))!=YES) { oops; }  }  //8-11
-  for(i=0;i<4;i++)  {  logh=10+(i*3);  if((ret=aaFontCreate(&zap->font[i+12].handle,"arial",0,-logh,80,NO,NO,5,0))!=YES)         { oops; }  }  //12-15
-  for(i=0;i<aaElementCount(zap->font);i++)  {  if(zap->font[i].handle!=0)   {   aaFontStatus(zap->font[i].handle,&zap->font[i].status);   }  }
-  mpi=zap->info.display_info.monitor_primary_index;
-  msi=zap->info.display_info.monitor_smallest_index;
-  mli=zap->info.display_info.monitor_largest_index;
-  aaSizeCopy(&s2,(_size*)&zap->info.display_info.monitor_rect[msi].w);
+  aaInfoGet(&ezy->info);
+  for(i=0;i<4;i++)  {  logh=10+(i*3);  if((ret=aaFontCreate(&ezy->font[i+0].handle,"consolas",0,-logh,58,NO,NO,5,0))!=YES)       { oops; }  }  //0-3
+  for(i=0;i<4;i++)  {  logh=10+(i*3);  if((ret=aaFontCreate(&ezy->font[i+4].handle,"courier new",0,-logh,58,NO,NO,5,0))!=YES)    { oops; }  }  //4-7
+  for(i=0;i<4;i++)  {  logh=10+(i*3);  if((ret=aaFontCreate(&ezy->font[i+8].handle,"lucida console",0,-logh,58,NO,NO,5,0))!=YES) { oops; }  }  //8-11
+  for(i=0;i<4;i++)  {  logh=10+(i*3);  if((ret=aaFontCreate(&ezy->font[i+12].handle,"arial",0,-logh,80,NO,NO,5,0))!=YES)         { oops; }  }  //12-15
+  for(i=0;i<aaElementCount(ezy->font);i++)  {  if(ezy->font[i].handle!=0)   {   aaFontStatus(ezy->font[i].handle,&ezy->font[i].status);   }  }
+  mpi=ezy->info.display_info.monitor_primary_index;
+  msi=ezy->info.display_info.monitor_smallest_index;
+  mli=ezy->info.display_info.monitor_largest_index;
+  aaSizeCopy(&s2,(_size*)&ezy->info.display_info.monitor_rect[msi].w);
   aaSizeSet(&s2,s2.w*0.50,s2.h*0.50);
-  aaSizeCopy(&s3,(_size*)&zap->info.display_info.monitor_rect[mli].w);
+  aaSizeCopy(&s3,(_size*)&ezy->info.display_info.monitor_rect[mli].w);
   aaSizeSet(&s1,s2.w+(s2.w*0.25),s2.h+(s2.h*0.25));
-  s1.w=aaNumRoof(s1.w,zap->info.display_info.monitor_rect[mpi].w);
-  s1.h=aaNumRoof(s1.h,zap->info.display_info.monitor_rect[mpi].h);
-  if((ret=aaSurfaceMinMaxCreate(&zap->surface.handle,&s1,&s2,&s3))!=YES) { oops; }
-  if((ret=aaSurfaceCreate(&zap->canvas.handle,&s3))!=YES) { oops; }
-  aaSurfaceStatus(zap->canvas.handle,&zap->canvas.status);
-  aaSurfaceCenter(zap->surface.handle,0);
-  aaSurfaceVisualize(zap->surface.handle,0,0);
-  aaSurfaceIconSetUsingResource(zap->surface.handle,1000,0xffffffff);
-  aaSurfaceFocus(zap->surface.handle);
-  aaSurfaceMoveAreaSet(zap->surface.handle,40);
-  aaSurfaceTitleSet(zap->surface.handle,"%s",zap->info.sys_info.product_name);
-  aaSurfaceStatus(zap->surface.handle,&zap->surface.status);
-  if(aaSizeEqualsSize(&zap->surface.status.min_size,&zap->surface.status.max_size)==NO)
+  s1.w=aaNumRoof(s1.w,ezy->info.display_info.monitor_rect[mpi].w);
+  s1.h=aaNumRoof(s1.h,ezy->info.display_info.monitor_rect[mpi].h);
+  if((ret=aaSurfaceMinMaxCreate(&ezy->surface.handle,&s1,&s2,&s3))!=YES) { oops; }
+  if((ret=aaSurfaceCreate(&ezy->canvas.handle,&s3))!=YES) { oops; }
+  aaSurfaceStatus(ezy->canvas.handle,&ezy->canvas.status);
+  aaSurfaceCenter(ezy->surface.handle,0);
+  aaSurfaceVisualize(ezy->surface.handle,0,0);
+  aaSurfaceIconSetUsingResource(ezy->surface.handle,1000,0xffffffff);
+  aaSurfaceFocus(ezy->surface.handle);
+  aaSurfaceMoveAreaSet(ezy->surface.handle,40);
+  aaSurfaceTitleSet(ezy->surface.handle,"%s",ezy->info.sys_info.product_name);
+  aaSurfaceStatus(ezy->surface.handle,&ezy->surface.status);
+  if(aaSizeEqualsSize(&ezy->surface.status.min_size,&ezy->surface.status.max_size)==NO)
    {
-   if(aaSurfaceSizeableSet(zap->surface.handle,1)!=YES) oof;
-   if(aaSurfaceResizeBorderSet(zap->surface.handle,8)!=YES) oof;
-   aaSurfaceStatus(zap->surface.handle,&zap->surface.status);
+   if(aaSurfaceSizeableSet(ezy->surface.handle,1)!=YES) oof;
+   if(aaSurfaceResizeBorderSet(ezy->surface.handle,8)!=YES) oof;
+   aaSurfaceStatus(ezy->surface.handle,&ezy->surface.status);
    }
-  aaSurfaceRectSet(zap->surface.handle,&zap->surface.status.rect);
-  aaSurfaceUpdateAreaAdd(zap->surface.handle,0,0);
-  if(aaTextboxInit(&zap->text_box,zap->surface.handle,zap->font[2].handle)!=YES) { oof; }
-  aaRectSet(&r1,5,zap->surface.status.size.h-42,zap->surface.status.max_size.w-10,40);
-  aaTextboxRectSet(&zap->text_box,&r1);
-  aaQueCreate(&zap->text_que.handle);
-  aaQueStatus(zap->text_que.handle,&zap->text_que.status);
-  aaStatusGet(&zap->status);
+  aaSurfaceRectSet(ezy->surface.handle,&ezy->surface.status.rect);
+  aaSurfaceUpdateAreaAdd(ezy->surface.handle,0,0);
+  if(aaTextboxInit(&ezy->text_box,ezy->surface.handle,ezy->font[2].handle)!=YES) { oof; }
+  aaRectSet(&r1,5,ezy->surface.status.size.h-42,ezy->surface.status.max_size.w-10,40);
+  aaTextboxRectSet(&ezy->text_box,&r1);
+  aaQueCreate(&ezy->text_que.handle);
+  aaQueStatus(ezy->text_que.handle,&ezy->text_que.status);
+  aaStatusGet(&ezy->status);
   }
- if((aa_cycle%10)==0) { aaStatusGet(&zap->status); }
- aaSurfaceStatus(zap->surface.handle,&zap->surface.status);
- aaTextboxYield(&zap->text_box,&zap->ie);
- if(zap->text_box.is_enter)
+ if((aa_cycle%10)==0) { aaStatusGet(&ezy->status); }
+ aaSurfaceStatus(ezy->surface.handle,&ezy->surface.status);
+ aaTextboxYield(&ezy->text_box,&ezy->ie);
+ if(ezy->text_box.is_enter)
   {
-  if((ret=aaQueWrite(zap->text_que.handle,sizeof(_str4k),&zap->text_box.str))!=YES) { oops; }
-  aaQueStatus(zap->text_que.handle,&zap->text_que.status);
-  aaTextboxReset(&zap->text_box);
+  if((ret=aaQueWrite(ezy->text_que.handle,sizeof(_str4k),&ezy->text_box.str))!=YES) { oops; }
+  aaQueStatus(ezy->text_que.handle,&ezy->text_que.status);
+  aaTextboxReset(&ezy->text_box);
   }
- aaQueStatus(zap->text_que.handle,&zap->text_que.status);
- if(zap->surface.status.update_area.state||zap->surface.status.resize_counter||zap->text_box.needs_paint||zap->surface.status.is_focus!=zap->is_focus)
+ aaQueStatus(ezy->text_que.handle,&ezy->text_que.status);
+ if(ezy->surface.status.update_area.state||ezy->surface.status.resize_counter||ezy->text_box.needs_paint||ezy->surface.status.is_focus!=ezy->is_focus)
   {
-  if(zap->surface.status.resize_counter||zap->surface.status.is_focus!=zap->is_focus)
+  if(ezy->surface.status.resize_counter||ezy->surface.status.is_focus!=ezy->is_focus)
    {
-   aaSurfaceResizeCounterReset(zap->surface.handle);
-   aaRectSet(&r1,0,0,zap->surface.status.size.w,45);
-   aaSurfaceClear(zap->surface.handle,&col_pastelblue[4]);
-   aaSurfaceCaption(zap->surface.handle,&r1,zap->font[15].handle,0,0,0,zap->surface.status.is_focus,"%s",zap->surface.status.title);
-   aaSurfaceUpdateAreaAdd(zap->surface.handle,0,NO);
-   aaSurfaceStatus(zap->surface.handle,&zap->surface.status);
+   aaSurfaceResizeCounterReset(ezy->surface.handle);
+   aaRectSet(&r1,0,0,ezy->surface.status.size.w,45);
+   aaSurfaceClear(ezy->surface.handle,&col_pastelblue[4]);
+   aaSurfaceCaption(ezy->surface.handle,&r1,ezy->font[15].handle,0,0,0,ezy->surface.status.is_focus,"%s",ezy->surface.status.title);
+   aaSurfaceUpdateAreaAdd(ezy->surface.handle,0,NO);
+   aaSurfaceStatus(ezy->surface.handle,&ezy->surface.status);
    aaRectSet(&r3,(r1.x+r1.w)-30,r1.y+6,20,20);
-   aaSurfaceCloseButton(zap->surface.handle,&r3,NO,&col_null,&col_gray[22]);
-   aaRectCopy(&zap->sysbut_rect[0],&r3);
+   aaSurfaceCloseButton(ezy->surface.handle,&r3,NO,&col_null,&col_gray[22]);
+   aaRectCopy(&ezy->sysbut_rect[0],&r3);
    aaRectAdjust(&r3,-30,0,0,0);
-   if(zap->surface.status.is_maximized)    {    aaSurfaceRestoreButton(zap->surface.handle,&r3,NO,&col_null,&col_gray[22]);    }
-   else                                    {    aaSurfaceMaximizeButton(zap->surface.handle,&r3,NO,&col_null,&col_gray[22]);   }
-   aaRectCopy(&zap->sysbut_rect[1],&r3);
+   if(ezy->surface.status.is_maximized)    {    aaSurfaceRestoreButton(ezy->surface.handle,&r3,NO,&col_null,&col_gray[22]);    }
+   else                                    {    aaSurfaceMaximizeButton(ezy->surface.handle,&r3,NO,&col_null,&col_gray[22]);   }
+   aaRectCopy(&ezy->sysbut_rect[1],&r3);
    aaRectAdjust(&r3,-30,0,0,0);
-   aaSurfaceMinimizeButton(zap->surface.handle,&r3,NO,&col_null,&col_gray[22]);
-   aaRectCopy(&zap->sysbut_rect[2],&r3);
-   aaRectSet(&r1,5,zap->surface.status.size.h-42,zap->surface.status.max_size.w-10,40);
-   aaTextboxRectSet(&zap->text_box,&r1);
+   aaSurfaceMinimizeButton(ezy->surface.handle,&r3,NO,&col_null,&col_gray[22]);
+   aaRectCopy(&ezy->sysbut_rect[2],&r3);
+   aaRectSet(&r1,5,ezy->surface.status.size.h-42,ezy->surface.status.max_size.w-10,40);
+   aaTextboxRectSet(&ezy->text_box,&r1);
+   aaRectSet(&ezy->canvas_rect,0,46,ezy->surface.status.rect.w,r1.y-48);
    }
-  aaRectSet(&r1,0,46,zap->surface.status.size.w,zap->surface.status.size.h-90);
-  aaRectSet(&r2,0,46,zap->surface.status.size.w,zap->surface.status.size.h-90);
-  aaSurfaceImageDrawUsingSurface(zap->surface.handle,&r1,zap->canvas.handle,&r2,0,0,255);
-  if(zap->text_box.magic!=0)  {  aaTextboxForcePaint(&zap->text_box);     }
-  aaSurfaceUpdate(zap->surface.handle);
-  if(zap->surface.status.is_shown!=YES) { aaSurfaceShow(zap->surface.handle,YES); }
-  aaSurfaceStatus(zap->surface.handle,&zap->surface.status);
-  zap->is_focus=zap->surface.status.is_focus;
+  aaRectSet(&r1,0,46,ezy->surface.status.size.w,ezy->surface.status.size.h-90);
+  aaRectSet(&r2,0,46,ezy->surface.status.size.w,ezy->surface.status.size.h-90);
+  aaSurfaceImageDrawUsingSurface(ezy->surface.handle,&r1,ezy->canvas.handle,&r2,0,0,255);
+  if(ezy->text_box.magic!=0)  {  aaTextboxForcePaint(&ezy->text_box);     }
+  aaSurfaceUpdate(ezy->surface.handle);
+  if(ezy->surface.status.is_shown!=YES) { aaSurfaceShow(ezy->surface.handle,YES); }
+  aaSurfaceStatus(ezy->surface.handle,&ezy->surface.status);
+  ezy->is_focus=ezy->surface.status.is_focus;
   }
  if(aaYield(1000.0)!=RET_YES)
   {
-  aaSurfaceDestroy(zap->surface.handle);
-  aaSurfaceDestroy(zap->canvas.handle);
-  for(i=0;i<16;i++) { aaFontDestroy(zap->font[i].handle); }
-  aaQueDestroy(zap->text_que.handle);
+  aaSurfaceDestroy(ezy->surface.handle);
+  aaSurfaceDestroy(ezy->canvas.handle);
+  for(i=0;i<16;i++) { aaFontDestroy(ezy->font[i].handle); }
+  aaQueDestroy(ezy->text_que.handle);
   aaFocusToCodeBlocks();
   return RET_NO;
   }
- aaInputEngine(&zap->ie,15,0,15,15);
- if(aaIeIsKeyDown(zap->ie,VK_ESCAPE))
+ aaInputEngine(&ezy->ie,15,0,15,15);
+ if(aaIeIsKeyDown(ezy->ie,VK_ESCAPE))
   {
-  if(zap->surface.handle!=0&&zap->ie.curr->focus_handle==zap->surface.handle)  { aa_is_esc=YES;  }
+  if(ezy->surface.handle!=0&&ezy->ie.curr->focus_handle==ezy->surface.handle)  { aa_is_esc=YES;  }
   else
-  if(zap->surface.handle==0)                                                 { aa_is_esc=YES;  }
+  if(ezy->surface.handle==0)                                                 { aa_is_esc=YES;  }
   }
- if(zap->ie.is_ok)
+ if(ezy->ie.is_ok)
   {
-  if(zap->ie.event_byt[aa_IE_Click])
+  if(ezy->ie.event_byt[aa_IE_Click])
    {
    while(1)
     {
-    if(aaCordIsWithinRect(&zap->ie.curr->focus_cord,&zap->sysbut_rect[0])==YES)
+    if(aaCordIsWithinRect(&ezy->ie.curr->focus_cord,&ezy->sysbut_rect[0])==YES)
      {
      aa_is_esc=YES;
      break;
      }
-    if(aaCordIsWithinRect(&zap->ie.curr->focus_cord,&zap->sysbut_rect[1])==YES)
+    if(aaCordIsWithinRect(&ezy->ie.curr->focus_cord,&ezy->sysbut_rect[1])==YES)
      {
-     aaSurfaceMaximize(zap->surface.handle,TOGGLE);
-     aaSurfaceStatus(zap->surface.handle,&zap->surface.status);
-     if(zap->surface.status.is_maximized)
+     aaSurfaceMaximize(ezy->surface.handle,TOGGLE);
+     aaSurfaceStatus(ezy->surface.handle,&ezy->surface.status);
+     if(ezy->surface.status.is_maximized)
       {
-      if(aaSurfaceRequiresResize(zap->surface.handle,&r1)==YES)
+      if(aaSurfaceRequiresResize(ezy->surface.handle,&r1)==YES)
        {
-       aaSurfaceRectSet(zap->surface.handle,&r1);
-       aaSurfaceStatus(zap->surface.handle,&zap->surface.status);
+       aaSurfaceRectSet(ezy->surface.handle,&r1);
+       aaSurfaceStatus(ezy->surface.handle,&ezy->surface.status);
        }
       }
      break;
      }
-    if(aaCordIsWithinRect(&zap->ie.curr->focus_cord,&zap->sysbut_rect[2])==YES)
+    if(aaCordIsWithinRect(&ezy->ie.curr->focus_cord,&ezy->sysbut_rect[2])==YES)
      {
-     aaSurfaceMinimize(zap->surface.handle);
-     aaSurfaceStatus(zap->surface.handle,&zap->surface.status);
+     aaSurfaceMinimize(ezy->surface.handle);
+     aaSurfaceStatus(ezy->surface.handle,&ezy->surface.status);
      break;
      }
     break;
@@ -79816,7 +79814,7 @@ whatever is possible
 
 
 
- B aaZapTextRead                       (_zap*zap,_str4k*str)
+ B aaEzyTextRead                       (_ezy*ezy,_str4k*str)
  {
  B ret;
  H have;
@@ -79824,28 +79822,28 @@ whatever is possible
  #ifdef aa_VERSION
  aa_ZIAG(__FUNCTION__);
  #endif
- objTest(zap,aaZapYield);
+ objTest(ezy,aaEzyYield);
  if(str==NULL) { return RET_MISSINGPARM; }
- aaQueStatus(zap->text_que.handle,&zap->text_que.status);
- have=zap->text_que.status.bytes/sizeof(_str4k);
+ aaQueStatus(ezy->text_que.handle,&ezy->text_que.status);
+ have=ezy->text_que.status.bytes/sizeof(_str4k);
  if(have==0) { return RET_NOTREADY; }
- if((ret=aaQueRead(zap->text_que.handle,sizeof(_str4k),str))!=YES) { oops; }
- aaQueStatus(zap->text_que.handle,&zap->text_que.status);
+ if((ret=aaQueRead(ezy->text_que.handle,sizeof(_str4k),str))!=YES) { oops; }
+ aaQueStatus(ezy->text_que.handle,&ezy->text_que.status);
  return RET_YES;
  }
 
 
 
 
- B aaZapUpdate                         (_zap*zap,_rect*rect)
+ B aaEzyUpdate                         (_ezy*ezy,_rect*rect)
  {
  #ifdef aa_VERSION
  aa_ZIAG(__FUNCTION__);
  #endif
- objTest(zap,aaZapYield);
- if(rect==NULL)   {  aaSurfaceUpdateAreaAdd(zap->surface.handle,0,0);  }
- else             {    aaSurfaceUpdateAreaAdd(zap->surface.handle,rect,0);  }
- aaSurfaceStatus(zap->surface.handle,&zap->surface.status);
+ objTest(ezy,aaEzyYield);
+ if(rect==NULL)   {  aaSurfaceUpdateAreaAdd(ezy->surface.handle,0,0);  }
+ else             {    aaSurfaceUpdateAreaAdd(ezy->surface.handle,rect,0);  }
+ aaSurfaceStatus(ezy->surface.handle,&ezy->surface.status);
  return RET_YES;
  }
 

@@ -6230,15 +6230,16 @@ VP aaf                                (VP buf,H off,VP fmt,...);
  _fontunit font[16];
  _rect sysbut_rect[3];
  _surfaceunit surface;
+ _rect canvas_rect;
  _surfaceunit canvas;
  _textbox text_box;
  _queunit text_que;
  }
- _zap;
+ _ezy;
 
- B aaZapYield                          (_zap*zap);
- B aaZapTextRead                       (_zap*zap,_str4k*str);
- B aaZapUpdate                         (_zap*zap,_rect*rect);
+ B aaEzyYield                          (_ezy*ezy);
+ B aaEzyTextRead                       (_ezy*ezy,_str4k*str);
+ B aaEzyUpdate                         (_ezy*ezy,_rect*rect);
 
 
 
