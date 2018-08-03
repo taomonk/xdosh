@@ -1,5 +1,4 @@
-// Copyright (c) 2008-2018, Ashot Apakian
-// All rights reserved.
+// 2008-2018, Ashod Apakian
 /*-----------------------------------------------------------------------*/
  #pragma once #ifndef INC_AA
  #define INC_AA
@@ -6239,6 +6238,7 @@ VP aaf                                (VP buf,H off,VP fmt,...);
 
  B aaEzyYield                          (_ezy*ezy);
  B aaEzyTextRead                       (_ezy*ezy,_str4k*str);
+ B aaEzyLog                            (_ezy*ezy,VP fmt,...);
  B aaEzyUpdate                         (_ezy*ezy,_rect*rect);
 
 
@@ -6370,6 +6370,23 @@ VP aaf                                (VP buf,H off,VP fmt,...);
  B aaPacketToString                    (_packet*packet,VP string);
  B aaPacketFieldGet                    (_packet*packet,H index,HP offset,HP bytes,VP data);
  B aaPacketFieldTwoGet                 (_packet*packet,H index,HP offset,HP bytes,VP data,HP offset2,HP bytes2,VP data2);
+
+/*-----------------------------------------------------------------------*/
+
+
+ structure
+ {
+ B pub_key[32];
+ B pri_key[64];
+ }
+ _ed25519key;
+
+
+ B aaEd25519KeypairGenerate            (_ed25519key*key,BP seed,B flag);
+ B aaEd25519PublicRecover              (_ed25519key*key);
+ B aaEd25519MessageSign                (_ed25519key*key,BP signature,H bytes,VP data);
+ B aaEd25519MessageVerify              (_ed25519key*key,BP signature,H bytes,VP data);
+ B aaEd25519SharedSecret               (_ed25519key*key,BP shared);
 
 
 
