@@ -82260,7 +82260,9 @@ whatever is possible
   aaTextboxRectSet(&ezy->text_box,&r1);
   aaQueCreate(&ezy->text_que.handle);
   aaQueStatus(ezy->text_que.handle,&ezy->text_que.status);
+  aaSurfaceLogWriteSet(ezy->canvas.handle,YES);
   aaStatusGet(&ezy->status);
+  aaSurfaceStatus(ezy->canvas.handle,&ezy->canvas.status);
   }
  if((aa_cycle%10)==0) { aaStatusGet(&ezy->status); }
  aaSurfaceStatus(ezy->surface.handle,&ezy->surface.status);
@@ -85648,6 +85650,133 @@ size_t mbedtls_mpi_bitlen( const mbedtls_mpi *X )
  return RET_YES;
  }
 
+
+
+/*-----------------------------------------------------------------------*/
+
+
+ B aaEntropyPoolNew                    (_entropypool*entropypool)
+ {
+ B ret;
+ _info info;
+ _status status;
+
+ #ifdef aa_VERSION
+ aa_ZIAG(__FUNCTION__);
+ #endif
+ if(entropypool==NULL) { return RET_MISSINGPARM; }
+ aaMemoryFill(entropypool,sizeof(_entropypool),0);
+ entropypool->magic=aaHPP(aaEntropyPoolNew);
+ if((ret=aaDigestCreate(&entropypool->digest.handle,aa_DIGESTTYPE_Sha512))!=YES) { oops; return ret; }
+ aaDigestStatus(entropypool->digest.handle,&entropypool->digest.status);
+ entropypool->hard[0]=aaHardCounter();
+ entropypool->hard[1]=aaRtdscGet();
+ aaEntropyPoolWrite(entropypool,8,&entropypool->hard[0]);
+ aaInfoGet(&info);
+ aaEntropyPoolWrite(entropypool,sizeof(info),&info);
+ aaStatusGet(&status);
+ aaEntropyPoolWrite(entropypool,sizeof(status),&status);
+ aaEntropyPoolWrite(entropypool,8,&entropypool->hard[1]);
+ return RET_YES;
+ }
+
+
+
+ B aaEntropyPoolDelete                 (_entropypool*entropypool)
+ {
+ #ifdef aa_VERSION
+ aa_ZIAG(__FUNCTION__);
+ #endif
+ if(entropypool==NULL) { return RET_MISSINGPARM; }
+ if(entropypool->magic!=aaHPP(aaEntropyPoolNew)) { return RET_NOTINITIALIZED; }
+ if(entropypool->digest.handle!=0)  {  aaDigestDestroy(entropypool->digest.handle);  }
+ aaMemoryFill(entropypool,sizeof(_entropypool),0);
+ return RET_YES;
+ }
+
+
+
+ B aaEntropyPoolWrite                  (_entropypool*entropypool,H bytes,VP data)
+ {
+ BP bp;
+ B v0,v1;
+ H go;
+ B dig[64];
+ Q hard,tot;
+ Q hard_dif[2];
+
+ #ifdef aa_VERSION
+ aa_ZIAG(__FUNCTION__);
+ #endif
+ if(entropypool==NULL) { return RET_MISSINGPARM; }
+ if(entropypool->magic!=aaHPP(aaEntropyPoolNew)) { return RET_NOTINITIALIZED; }
+ if(data==NULL) { return RET_MISSINGPARM; }
+ if(bytes==0)   { return RET_BADPARM;     }
+ if(aaDigestWrite(entropypool->digest.handle,bytes,data,NO,NULL,NULL)!=YES) { oof; }
+ aaDigestStatus(entropypool->digest.handle,&entropypool->digest.status);
+ bp=(BP)entropypool->digest.status.digest;
+ v0=bp[0];
+ v1=bp[1+(v0%63)];
+ go=((v0+v1)>>4);
+ go=go+(v0%11)+1;
+ aaMemoryCopy(dig,64,entropypool->digest.status.digest);
+ while(go--)
+  {
+  if(aaDigestWrite(entropypool->digest.handle,1+((v0+v1)%63),dig,NO,NULL,NULL)!=YES) { oof; }
+  aaDigestStatus(entropypool->digest.handle,&entropypool->digest.status);
+  aaMemoryCopy(dig,64,entropypool->digest.status.digest);
+  }
+ hard_dif[0]=aaHardCounter()-entropypool->hard[0];
+ hard_dif[1]=aaRtdscGet()-entropypool->hard[1];
+ hard=hard_dif[0]+hard_dif[1];
+ hard=hard%(((Q)(v0+v1)%10)+2LL);
+ tot=hard_dif[0]+hard_dif[1];
+ if(aaDigestWrite(entropypool->digest.handle,8,&tot,NO,NULL,NULL)!=YES) { oof; }
+ go=(H)hard;
+ if((go%5)==0)
+  {
+  while(go--)
+   {
+   if(aaDigestWrite(entropypool->digest.handle,1+((v0+v1+go)%13),dig,NO,NULL,NULL)!=YES) { oof; }
+   aaDigestStatus(entropypool->digest.handle,&entropypool->digest.status);
+   aaMemoryCopy(dig,64,entropypool->digest.status.digest);
+   }
+  }
+ aaDigestStatus(entropypool->digest.handle,&entropypool->digest.status);
+ entropypool->hard[0]=aaHardCounter();
+ entropypool->hard[1]=aaRtdscGet();
+ return RET_YES;
+ }
+
+
+
+
+ B aaEntropyPoolRead                   (_entropypool*entropypool,H bytes,VP data)
+ {
+ H off,todo,cando;
+ BP bp;
+
+ #ifdef aa_VERSION
+ aa_ZIAG(__FUNCTION__);
+ #endif
+ if(entropypool==NULL) { return RET_MISSINGPARM; }
+ if(entropypool->magic!=aaHPP(aaEntropyPoolNew)) { return RET_NOTINITIALIZED; }
+ if(data==NULL) { return RET_MISSINGPARM; }
+ if(bytes==0)   { return RET_BADPARM;     }
+ todo=bytes;
+ off=0;
+ bp=(BP)data;
+ while(1)
+  {
+  cando=todo-off;
+  if(cando==0) { break; }
+  if(cando>64) { cando=64; }
+  aaMemoryCopy(&bp[off],cando,&entropypool->digest.status.digest[0]);
+  aaEntropyPoolWrite(entropypool,(bp[off]%32)+1,&bp[off]);
+  off+=cando;
+  }
+ return RET_YES;
+ }
 
 
 

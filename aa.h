@@ -6388,6 +6388,21 @@ VP aaf                                (VP buf,H off,VP fmt,...);
  B aaEd25519MessageVerify              (_ed25519key*key,BP signature,H bytes,VP data);
  B aaEd25519SharedSecret               (_ed25519key*key,BP shared);
 
+/*-----------------------------------------------------------------------*/
+
+ structure
+ {
+ H magic;
+ _digestunit digest;
+ Q hard[2];
+ }
+ _entropypool;
+
+
+ B aaEntropyPoolNew                    (_entropypool*entropypool);
+ B aaEntropyPoolDelete                 (_entropypool*entropypool);
+ B aaEntropyPoolWrite                  (_entropypool*entropypool,H bytes,VP data);
+ B aaEntropyPoolRead                   (_entropypool*entropypool,H bytes,VP data);
 
 
 
