@@ -5707,6 +5707,7 @@ VP aaf                                (VP buf,H off,VP fmt,...);
  B aaSysSchemeHandlerSet               (VP scheme,VP deficon,VP appcmdline);
  B aaSysTweak                          (V);
  B aaSysProcessHashGet                 (_fileunit*fun,VP hexstr);
+ B aaSysUniqueGet                      (H flag,BP ustr);
 
 
 

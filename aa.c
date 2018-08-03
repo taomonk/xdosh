@@ -78052,6 +78052,46 @@ If lpOverlapped is not NULL, lpNumberOfBytesRead can be NULL. If this is an over
 
 
 
+
+ B aaSysUniqueGet                      (H flag,BP ustr)
+ {
+ B ret;
+ B str[_1K];
+ _drivelist dl;
+ _syspath sp;
+ _sysinfo si;
+ B drive;
+ H i;
+
+ #ifdef aa_VERSION
+ aa_ZIAG(__FUNCTION__);
+ #endif
+ if(ustr==NULL) { return RET_MISSINGPARM; }
+ ustr[0]=NULL_CHAR;
+ aaMemoryFill(str,sizeof(str),0);
+ aaSysInfoGet(&si);
+ if(aaBitGet(flag,0))
+  {
+  aaSysPathGet(&sp);
+  aaDriveListGet(&dl);
+  drive=sp.system[0];
+  if(aaCharIsAlphaHi(drive)) { drive=drive+32; }
+  for(i=0;i<26;i++)
+   {
+   if(dl.info[i].drive==drive) { aaStringAppend(str,dl.info[i].digest);  break;    }
+   }
+  }
+ if(aaBitGet(flag,1))  {  aaStringAppend(str,si.product_key);    }
+ if(aaBitGet(flag,2))  {  aaStringAppend(str,si.computer_name);  }
+ if(aaBitGet(flag,3))  {  aaStringAppend(str,si.user_name);      }
+ if(str[0]==NULL_CHAR) {  return RET_FAILED; }
+ if((ret=aaDigestQuickTwice(aa_DIGESTTYPE_Sha256,0,ustr,0,str))!=YES) { oops; }
+ return RET_YES;
+ }
+
+
+
+
 /*-----------------------------------------------------------------------*/
 
 
