@@ -36959,7 +36959,7 @@ soff=moff=stage=0;
  if(len)         { *len=length; }
  if(val)
   {
-  if(length==1) { *val=*(BP)&bp[1]; }
+  if(length==1) { *val=*(BP)&bp[0]; }
   else
   if(length==3) { *val=*(WP)&bp[1]; }
   else
@@ -82336,7 +82336,7 @@ whatever is possible
    aaRectCopy(&ezy->sysbut_rect[2],&r3);
    aaRectSet(&r1,5,ezy->surface.status.size.h-42,ezy->surface.status.max_size.w-10,40);
    aaTextboxRectSet(&ezy->text_box,&r1);
-   aaRectSet(&ezy->canvas_rect,0,46,ezy->surface.status.rect.w,r1.y-48);
+   aaRectSet(&ezy->canvas_rect,0,46,ezy->surface.status.max_size.w,r1.y-48);
    }
   aaRectSet(&r1,0,46,ezy->surface.status.size.w,ezy->surface.status.size.h-90);
   aaRectSet(&r2,0,46,ezy->surface.status.size.w,ezy->surface.status.size.h-90);
