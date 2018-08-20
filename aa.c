@@ -178,6 +178,17 @@
  }
  UNICODE_STRING;
 
+
+ structure
+ {
+ W Length;
+ W MaximumLength;
+ PVOID64 Buffer;
+ }
+ UNICODE_STRING_WOW64;
+
+
+
  structure
  {
  N ExitStatus;
@@ -188,6 +199,21 @@
  HP ParentProcessId;
  }
  PROCESS_BASIC_INFORMATION;
+
+
+
+ structure
+ {
+ VP Reserved1[2];
+ PVOID64 PebBaseAddress;
+ VP Reserved2[4];
+ ULONG_PTR UniqueProcessId[2];
+ VP Reserved3[2];
+ }
+ PROCESS_BASIC_INFORMATION_WOW64;
+
+
+
 
 
  structure
@@ -696,6 +722,8 @@
 
 /*-----------------------------------------------------------------------*/
 
+ #define aa_USE_MEMORY_TABLE           0
+
  #define aa_MEMORY_OPCODE_SAFETY       32
 
  #define aa_MEMORYCRC_POLYNOMIAL       0x04C11DB7
@@ -744,6 +772,7 @@
  #define aa_MEMORYTEMP_QueStrap        48
  #define aa_MEMORYTEMP_SystemLogf      49
  #define aa_MEMORYTEMP_SystemLogf2     50
+ #define aa_MEMORYTEMP_Bifi            51
 
 
  #define aa_MEM_NOTALIND(eex,eey)      (((N)eex&(sizeof(N)-1))|((N)eey&(sizeof(N)-1)))
@@ -3329,6 +3358,44 @@ _output_error:
  B aa_SurfaceDecodeTgaRle              (NP duppixcount,NP blockcount,HP off,VP mem,B bits,_rgba*p1);
 
  B aa_SurfaceSortSpots                 (PP mem);
+
+/*-----------------------------------------------------------------------*/
+
+
+ D aa_TweenEase_BackIn                 (D t,D b,D c,D d);
+ D aa_TweenEase_BackOut                (D t,D b,D c,D d);
+ D aa_TweenEase_BackInOut              (D t,D b,D c,D d);
+ D aa_TweenEase_BounceIn               (D t,D b,D c,D d);
+ D aa_TweenEase_BounceOut              (D t,D b,D c,D d);
+ D aa_TweenEase_BounceInOut            (D t,D b,D c,D d);
+ D aa_TweenEase_CircIn                 (D t,D b,D c,D d);
+ D aa_TweenEase_CircOut                (D t,D b,D c,D d);
+ D aa_TweenEase_CircInOut              (D t,D b,D c,D d);
+ D aa_TweenEase_CubicIn                (D t,D b,D c,D d);
+ D aa_TweenEase_CubicOut               (D t,D b,D c,D d);
+ D aa_TweenEase_CubicInOut             (D t,D b,D c,D d);
+ D aa_TweenEase_ElasticIn              (D t,D b,D c,D d);
+ D aa_TweenEase_ElasticOut             (D t,D b,D c,D d);
+ D aa_TweenEase_ElasticInOut           (D t,D b,D c,D d);
+ D aa_TweenEase_ExpoIn                 (D t,D b,D c,D d);
+ D aa_TweenEase_ExpoOut                (D t,D b,D c,D d);
+ D aa_TweenEase_ExpoInOut              (D t,D b,D c,D d);
+ D aa_TweenEase_LinearIn               (D t,D b,D c,D d);
+ D aa_TweenEase_LinearOut              (D t,D b,D c,D d);
+ D aa_TweenEase_LinearInOut            (D t,D b,D c,D d);
+ D aa_TweenEase_QuadIn                 (D t,D b,D c,D d);
+ D aa_TweenEase_QuadOut                (D t,D b,D c,D d);
+ D aa_TweenEase_QuadInOut              (D t,D b,D c,D d);
+ D aa_TweenEase_QuartIn                (D t,D b,D c,D d);
+ D aa_TweenEase_QuartOut               (D t,D b,D c,D d);
+ D aa_TweenEase_QuartInOut             (D t,D b,D c,D d);
+ D aa_TweenEase_QuintIn                (D t,D b,D c,D d);
+ D aa_TweenEase_QuintOut               (D t,D b,D c,D d);
+ D aa_TweenEase_QuintInOut             (D t,D b,D c,D d);
+ D aa_TweenEase_SineIn                 (D t,D b,D c,D d);
+ D aa_TweenEase_SineOut                (D t,D b,D c,D d);
+ D aa_TweenEase_SineInOut              (D t,D b,D c,D d);
+
 
 /*-----------------------------------------------------------------------*/
 
@@ -7012,6 +7079,7 @@ fail:
  _aa_clipboardsystem clipboard_system;
  _aa_ipcsystem ipc_system;
  _aa_desktopsystem desktop_system;
+ _entropypool system_entropy;
  B is_diag_paused;
  B is_ready;
  }
@@ -7088,6 +7156,7 @@ fail:
  _size aa_size_640x480={.w=640,.h=480 };
  _size aa_size_800x600={.w=800,.h=600 };
  _size aa_size_1024x768={.w=1024,.h=768 };
+ _size aa_size_1920x1080={.w=1920,.h=1080 } ;
 
 /*-----------------------------------------------------------------------*/
 
@@ -7349,6 +7418,7 @@ fail:
  ///OutputDebugString("line 4264");
  aa_CoreSystemLogStateSet(1);
  aaTimerTikElapsed(aa.core_system.aamain_tik,&aa.core_system.aamain_elapsed);
+ aaEntropyPoolNew(&aa.system_entropy);
  aa.is_ready=YES;
  is_aa_ready=YES;
  //if(setjmp(aa_jmp_buf)!=0)   { return RET_FAILED; } //oof; return(aaStop());   }
@@ -7390,6 +7460,7 @@ fail:
   aa.core_system.RoutineParmStop[mx-i-1]=NULL;
   aa.core_system.RoutineParmYield[mx-i-1]=NULL;
   }
+ aaEntropyPoolDelete(&aa.system_entropy);
  aa_BigintSystemStop();
  aa_DesktopSystemStop();
  aa_last_line_executed=__LINE__;
@@ -8422,7 +8493,7 @@ aa_last_line_executed=__LINE__;
  if((aa.core_system.kernel_module=LoadLibrary("kernel32.dll"))==NULL) { oow; }
  if((aa.core_system.user_module=LoadLibrary("user32.dll"))==NULL) { oow; }
  if((aa.core_system.psapi_module=LoadLibrary("psapi.dll"))==NULL) { oow; }
- if((aa.core_system.ntdll_module=LoadLibrary("ntdll.dll"))==NULL) { oow; }
+ if((aa.core_system.ntdll_module=LoadLibraryA("ntdll.dll"))==NULL) { oow; }
 
  if((idp=(_idp)GetProcAddress(aa.core_system.kernel_module,"IsDebuggerPresent"))!=NULL)  { aa.core_system.in_debugger=(B)(idp()==YES);  }
  if((ridp=(_ridp)GetProcAddress(aa.core_system.kernel_module,"CheckRemoteDebuggerPresent"))!=NULL)
@@ -8601,6 +8672,7 @@ aa_last_line_executed=__LINE__;
  B txt[_16K];
  //dB str[_1K];
  B id,ret;
+ S H entropy_counter=0;
  //H i;
 
  #if 0
@@ -8624,6 +8696,19 @@ aa_last_line_executed=__LINE__;
  #ifdef aa_VERSION
  aa_ZIAG(__FUNCTION__);
  #endif
+ if(entropy_counter==0LL)
+  {
+  aaEntropyPoolWrite(&aa.system_entropy,sizeof(msg),&msg);
+  aaEntropyPoolWrite(&aa.system_entropy,sizeof(wnd),&wnd);
+  aaEntropyPoolWrite(&aa.system_entropy,sizeof(wparm),&wparm);
+  aaEntropyPoolWrite(&aa.system_entropy,sizeof(lparm),&lparm);
+  aaEntropyPoolRead(&aa.system_entropy,4,&entropy_counter);
+  entropy_counter%=200;
+  entropy_counter++;
+  }
+ entropy_counter--;
+
+
  ret_value=-1;
  aa.core_system.wm_msg_count_total++;
  aa_stats[0]=aa.core_system.wm_msg_count_total;
@@ -8707,7 +8792,7 @@ aa_last_line_executed=__LINE__;
        {
        if(surp->status.drop_list.magic==0)
         {
-        aaListNew(&surp->status.drop_list,YES,0,0,1);
+        aaListNew(&surp->status.drop_list,YES,_8K,0,1);
         }
 
        aaListAppend(&surp->status.drop_list,0,txt,0,0);//"%s",txt);
@@ -8930,6 +9015,7 @@ aa_last_line_executed=__LINE__;
       //if(*(HP)&bp[12]!=aa.core_system.limiter_last_counter.hi||*(HP)&bp[16]!=aa.core_system.limiter_last_counter.lo )
       if(*(QP)&bp[12]!=aa.core_system.limiter_last_counter)//.hi||*(HP)&bp[16]!=aa.core_system.limiter_last_counter.lo )
        {
+       //aaDebugf("bp[12]=%I64d",*(QP)&bp[12]);
        aa.core_system.limiter_last_counter=*(QP)&bp[12];
        //aa.core_system.limiter_last_counter.hi=*(HP)&bp[12];
       // aa.core_system.limiter_last_counter.lo=*(HP)&bp[16];
@@ -8949,7 +9035,7 @@ aa_last_line_executed=__LINE__;
     return 1;
     }
 
-//  break;    // WM_COPYDATA fall-thru to ElseProc, so normal WM_COPYDATA messages are handled in ElseProc
+  break;    // WM_COPYDATA fall-thru to ElseProc, so normal WM_COPYDATA messages are handled in ElseProc
 
 
    default:
@@ -9121,12 +9207,22 @@ aa_last_line_executed=__LINE__;
  {
  MSG msg;
  BOOL bl;
+ S H entropy_counter=0LL;
  H go=0;
 
  do
  {
  if(PeekMessage(&msg,NULL,0,0,PM_NOREMOVE))
   {
+  if(entropy_counter==0LL)
+   {
+   aaEntropyPoolWrite(&aa.system_entropy,sizeof(msg),&msg);
+   aaEntropyPoolRead(&aa.system_entropy,4,&entropy_counter);
+   entropy_counter%=100;
+   entropy_counter++;
+   }
+  entropy_counter--;
+
   /* apr 2016 - using hooks instead
   if(msg.message==WM_MOUSEWHEEL)
    {
@@ -10971,6 +11067,17 @@ aa_last_line_executed=__LINE__;
 
 
 
+ B aaCoreEntropy                       (H bytes,VP data)
+ {
+ #ifdef aa_VERSION
+ aa_ZIAG(__FUNCTION__);
+ #endif
+ if(data==NULL) { return RET_MISSINGPARM; }
+ return(aaEntropyPoolRead(&aa.system_entropy,bytes,data));
+ }
+
+
+
  B aaProcessorCoreSet                  (H core)
  {
  HANDLE process;
@@ -11657,6 +11764,29 @@ aa_last_line_executed=__LINE__;
  return RET_YES;
  }
 
+
+
+
+ B aaTickUpdate                        (_tick*tick,H count)
+ {
+ H i;
+ _tick*gt;
+ Q ms;
+
+ #ifdef aa_VERSION
+ aa_ZIAG(__FUNCTION__);
+ #endif
+ if(tick==NULL) { return RET_MISSINGPARM; }
+ if(count==0)   { return RET_BADPARM; }
+ ms=aaMsRunning();
+ gt=(_tick*)tick;
+ for(i=0;i<count;i++)
+  {
+  if(gt[i].magic!=aaHPP(aaTickNew)) { return RET_NOTINITIALIZED; }
+  gt[i].elapsed=(G)ms-gt[i].ms;
+  }
+ return RET_YES;
+ }
 
 
 
@@ -13483,8 +13613,8 @@ redo:
  aaMemoryFill(&mstatus,sizeof(mstatus),0);
  mstatus.dwLength=sizeof(mstatus);
  GlobalMemoryStatusEx(&mstatus);
- aa.memory_system.status.table_used=0;
- aa.memory_system.status.table_available=aaElementCount(aa.memory_system.table.block);
+  aa.memory_system.status.table_used=0;
+  aa.memory_system.status.table_available=aaElementCount(aa.memory_system.table.block);
  aa.memory_system.status.os_physical_total=mstatus.ullTotalPhys;
  aa.memory_system.status.os_physical_allocated=mstatus.ullTotalPhys-mstatus.ullAvailPhys;
  aa.memory_system.status.os_memory_load=(F)mstatus.dwMemoryLoad;
@@ -13600,6 +13730,7 @@ redo:
  H by;
  B ret;
 
+ oof;
  #ifdef aa_VERSION
  aa_ZIAG(__FUNCTION__);
  #endif
@@ -13648,7 +13779,7 @@ redo:
   aa.memory_system.status.table_misses++;
   return RET_YES;
   }
- if((ret=aaMemoryBytesGet(mem,&by))!=RET_YES) { }//oops; }
+ if((ret=aaMemoryBytesGet(mem,&by))!=RET_YES) { oops; }//oops; }
  aaDebugf("who=%i mx=%i dofree=%i used=%i ptr=%-8i by=%i",who,mx,dofree,aa.memory_system.status.table_used,(Z)mem,by);
  for(i=0;i<mx;i++)
   {
@@ -13658,6 +13789,7 @@ redo:
    aaDebugf(" block[%-4i]=%-8i bytes=%-10u  prot=%-3s locked=%-3s user=%-3s realloc=%-8u (%s)",i,(Z)memhdr,memhdr->bytes, aaBoolString(memhdr->is_protected),aaBoolString(memhdr->is_locked),aaBoolString(memhdr->is_user), memhdr->realloc_count,memhdr->name);
    }
   }
+ oof;
  return RET_FAILED;
  }
 
@@ -13667,11 +13799,11 @@ redo:
 
  B aa_MemoryAllocate                   (PP mem,H bytes,VP name,B lock)
  {
- B ret;
+ //B ret;
  _aa_memoryheader*memhdr;
  BP vmem;
  BP mem_ptr;
- H len,ix;
+ H len;
  B type;
 
  #ifdef aa_VERSION
@@ -13695,8 +13827,12 @@ redo:
  memhdr->mini_type=type;
  if(name) { aaStringCopy(memhdr->name,name); }
  else     { memhdr->name[0]=NULL_CHAR; }
+ #if aa_USE_MEMORY_TABLE ==1
+ oof;
+ H ix;
  if((ret=aa_MemorySystemBlockTable(vmem,NO,&ix,__LINE__))!=YES)  {  oops;  }
  memhdr->table_index=ix;
+ #endif
  mem_ptr+=sizeof(_aa_memoryheader);
  *mem=mem_ptr;
  aa.memory_system.status.bytes_allocated+=memhdr->bytes;
@@ -13780,10 +13916,10 @@ redo:
 
  B aa_MemoryRelease                    (VP mem)
  {
- B ret;
+ //B ret;
  _aa_memoryheader*memhdr;
  BP vmem;
- H bytes,ix;
+ H bytes;
 
  #ifdef aa_VERSION
  aa_ZIAG(__FUNCTION__);
@@ -13799,7 +13935,10 @@ redo:
  if(memhdr->is_protected==YES) { oof; return RET_FORBIDDEN; }
  bytes=memhdr->bytes;
  if(memhdr->is_locked==YES)    { oof;  memhdr->is_locked=NO;  }
+ #if aa_USE_MEMORY_TABLE ==1
+ H ix;
  ix=memhdr->table_index;
+ #endif
  memhdr->magic=0;
  if(memhdr->mini_type!='G') { oof; }
  if(GlobalFree(memhdr->actual_ptr)!=NULL)
@@ -13808,7 +13947,11 @@ redo:
   aaNote(0,"%s:%i bytes=%i %s %i,%i",__func__,__LINE__,bytes,memhdr->name,aa.memory_system.status.blocks_allocated,aa.memory_system.status.bytes_allocated);
   return RET_FAILED;
   }
+
+ #if aa_USE_MEMORY_TABLE ==1
+ oof;
  if((ret=aa_MemorySystemBlockTable(vmem,YES,&ix,__LINE__))!=YES)  {  oops;  }
+ #endif
  aa.memory_system.status.bytes_allocated-=bytes;
  aa.memory_system.status.blocks_allocated--;
  aa.memory_system.release_calls++;
@@ -13915,7 +14058,7 @@ redo:
  aa_ZIAG(__FUNCTION__);
  #endif
  if(used)        { *used=aa.memory_system.status.table_used;      }
- if(avail)       { *used=aa.memory_system.status.table_available; }
+ if(avail)       { *avail=aa.memory_system.status.table_available; }
  if(memorytable) { aaMemoryCopy(memorytable,sizeof(_memorytable),&aa.memory_system.table);  }
  return RET_YES;
  }
@@ -16802,6 +16945,7 @@ redo:
  aaMissingParm(list);
  aaMemoryFill(list,sizeof(_list),0);
  dupesok&=1;
+ if(bloomsize==0&&dupesok==NO) { oof; return RET_BADPARM; }
  list->magic=aaHPP(aaListNew);
  list->slots=10;
  cs&=1;
@@ -16814,8 +16958,10 @@ redo:
  if((ret=aaMemoryNameSet(list->entry,"listentry"))!=YES) { oops; }
  if((ret=aaMemoryUnitAllocate(&list->mun,(128+256)*list->slots))!=YES) { oops; }
  if((ret=aaMemoryNameSet(list->mun.mem,"listmun"))!=YES) { oops; }
- if(bloomsize==0) { bloomsize=_8K; }
- if((ret=aaBloomNew(&list->bloom,bloomsize,list->is_case_sensitive,NULL))!=YES) { oops; }
+ if(dupesok==NO&&bloomsize!=0)
+  {
+  if((ret=aaBloomNew(&list->bloom,bloomsize,list->is_case_sensitive,NULL))!=YES) { oops; }
+  }
  list->allocs=1;
  return RET_YES;
  }
@@ -17204,7 +17350,10 @@ redo:
  list->id_counter++;
  list->order[li]=li;
 
- if((ret=aaBloomAdd(&list->bloom,ksl,keybuf))!=YES) { oops; }
+ if(list->bloom.magic!=0)
+  {
+  if((ret=aaBloomAdd(&list->bloom,ksl,keybuf))!=YES) { oops; }
+  }
 
  if(list->sorter.magic)  {  oof;  aaSorterDelete(&list->sorter);  }
  list->is_sort_needed=YES;
@@ -17292,10 +17441,12 @@ redo:
   return ret;
   }
 
-
- ret=aaBloomFind(&list->bloom,ksl,str);
- if(ret==RET_NOTFOUND) { return RET_NOTFOUND;  }
- if(ret!=RET_POSSIBLE) { oops; }
+ if(list->bloom.magic!=0)
+  {
+  ret=aaBloomFind(&list->bloom,ksl,str);
+  if(ret==RET_NOTFOUND) { return RET_NOTFOUND;  }
+  if(ret!=RET_POSSIBLE) { oops; }
+  }
 
  hs=0;
  aaStringHashGet(str,ksl,&hs,list->is_case_sensitive);
@@ -17511,7 +17662,7 @@ redo:
  aaMissingParm(options);
  aaMemoryFill(options,sizeof(_options),0);
  aaMagicSet(options,aaOptionsNew);
- aaListNew(&options->list,NO,0,0,1);
+ aaListNew(&options->list,NO,_8K,0,1);
 
  aaMemoryNameSet(options->list.entry,"optslistentry");
  aaMemoryNameSet(options->list.mun.mem,"optslistmun");
@@ -23658,16 +23809,19 @@ void ForceVisibleDisplay(HWND hwnd)
    case 0xDA: aa_JpegDecDecodeScan(jpegdecctx); break;
    case 0xFE: aa_JpegDecSkipMarker(jpegdecctx); break;
    default:
-   if((jpegdecctx->pos[-1]&0xF0)==0xE0)  aa_JpegDecSkipMarker(jpegdecctx);
-   else                                  return RET_NOTSUPPORTED;
+   if((jpegdecctx->pos[-1]&0xF0)==0xE0)  { aa_JpegDecSkipMarker(jpegdecctx); }
+   else                                  { return RET_NOTSUPPORTED;   }
    }
   }
- if(jpegdecctx->error!=RET_FINISHED) return jpegdecctx->error;
+ if(jpegdecctx->error!=RET_FINISHED) { return jpegdecctx->error; }
  jpegdecctx->error=RET_YES;
  aa_JpegDecConvert(jpegdecctx);
  return jpegdecctx->error;
  }
 
+
+
+/*-----------------------------------------------------------------------*/
 
 
 /*-----------------------------------------------------------------------*/
@@ -23700,6 +23854,311 @@ void ForceVisibleDisplay(HWND hwnd)
 
 /*-----------------------------------------------------------------------*/
 
+
+ D aa_TweenEase_BackIn                 (D t,D b,D c,D d)
+ {
+ D s=1.70158f;
+ D postFix=t/=d;
+ return c*(postFix)*t*((s+1)*t-s)+b;
+ }
+
+
+ D aa_TweenEase_BackOut                (D t,D b,D c,D d)
+ {
+ D s=1.70158f;
+ t=t/d-1;
+ return c*((t)*t*((s+1)*t+s)+1)+b;
+// return c*((t=t/d-1)*t*((s+1)*t+s)+1)+b;
+ }
+
+ D aa_TweenEase_BackInOut              (D t,D b,D c,D d)
+ {
+ D s=1.70158f;
+ s*=(1.525f);
+ t/=d/2;
+ if(t<1) return c/2*(t*t*(((s)+1)*t-s))+b;
+ //if((t/=d/2)<1) return c/2*(t*t*(((s*=(1.525f))+1)*t-s))+b;
+ t-=2;
+ D postFix=t;
+ s*=(1.525f);
+ return c/2*((postFix)*t*(((s)+1)*t+s)+2)+b;
+ //return c/2*((postFix)*t*(((s*=(1.525f))+1)*t+s)+2)+b;
+ }
+
+ D aa_TweenEase_BounceIn               (D t,D b,D c,D d)
+ {
+ return c-aa_TweenEase_BounceOut(d-t,0,c,d)+b;
+ }
+
+
+ D aa_TweenEase_BounceOut              (D t,D b,D c,D d)
+ {
+ if((t/=d)<(1/2.75f)) { return c*(7.5625f*t*t)+b; }
+ if(t<(2/2.75f))
+  {
+  D postFix=t-=(1.5f/2.75f);
+  return c*(7.5625f*(postFix)*t+.75f)+b;
+  }
+ if(t<(2.5/2.75))
+  {
+  D postFix=t-=(2.25f/2.75f);
+  return c*(7.5625f*(postFix)*t+.9375f)+b;
+  }
+ D postFix=t-=(2.625f/2.75f);
+ return c*(7.5625f*(postFix)*t+.984375f)+b;
+ }
+
+ D aa_TweenEase_BounceInOut            (D t,D b,D c,D d)
+ {
+ if(t<d/2) return aa_TweenEase_BounceIn(t*2,0,c,d)*.5f+b;
+ return aa_TweenEase_BounceOut(t*2-d,0,c,d)*.5f+c*.5f+b;
+ }
+
+
+ D aa_TweenEase_CircIn                 (D t,D b,D c,D d)
+ {
+ t/=d;
+ return -c*(sqrt(1-(t)*t)-1)+b;
+ //return -c*(sqrt(1-(t/=d)*t)-1)+b;
+ }
+
+
+ D aa_TweenEase_CircOut                (D t,D b,D c,D d)
+ {
+ t=t/d-1;
+ return c*sqrt(1-(t)*t)+b;
+ //return c*sqrt(1-(t=t/d-1)*t)+b;
+ }
+
+
+ D aa_TweenEase_CircInOut              (D t,D b,D c,D d)
+ {
+ t/=d/2;
+ if(t<1) return -c/2*(sqrt(1-t*t)-1)+b;
+ t-=2;
+ return c/2*(sqrt(1-t*(t))+1)+b;
+
+// if((t/=d/2)<1) return -c/2*(sqrt(1-t*t)-1)+b;
+// return c/2*(sqrt(1-t*(t-=2))+1)+b;
+ }
+
+
+ D aa_TweenEase_CubicIn                (D t,D b,D c,D d)
+ {
+ t/=d;
+ return c*(t)*t*t+b;
+ //return c*(t/=d)*t*t+b;
+ }
+
+
+ D aa_TweenEase_CubicOut               (D t,D b,D c,D d)
+ {
+ t=t/d-1;
+ return c*((t)*t*t+1)+b;
+ //return c*((t=t/d-1)*t*t+1)+b;
+ }
+
+
+
+ D aa_TweenEase_CubicInOut             (D t,D b,D c,D d)
+ {
+ t/=d/2;
+ if(t<1) return c/2*t*t*t+b;
+ t-=2;
+ return c/2*((t)*t*t+2)+b;
+ //if((t/=d/2)<1) return c/2*t*t*t+b;
+ //return c/2*((t-=2)*t*t+2)+b;
+ }
+
+
+ D aa_TweenEase_ElasticIn              (D t,D b,D c,D d)
+ {
+ if(t==0)      return b;
+ t/=d;
+ if(t==1) return b+c;
+// if((t/=d)==1) return b+c;
+ D p=d*.3f;
+ D a=c;
+ D s=p/4;
+ t-=1;
+ //D postFix=a*pow(2,10*(t-=1));
+ D postFix=a*pow(2,10*(t));
+ return -(postFix*sin((t*d-s)*(2*aaPi)/p))+b;
+ }
+
+
+ D aa_TweenEase_ElasticOut             (D t,D b,D c,D d)
+ {
+ if(t==0)      return b;
+ t/=d;
+ if(t==1) return b+c;
+ //if((t/=d)==1) return b+c;
+ D p=d*.3f;
+ D a=c;
+ D s=p/4;
+ return(a*pow(2,-10*t)*sin((t*d-s)*(2*aaPi)/p)+c+b);
+ }
+
+
+ D aa_TweenEase_ElasticInOut           (D t,D b,D c,D d)
+ {
+ if(t==0)        return b;
+ t/=d/2;
+ if(t==2) return b+c;
+ //if((t/=d/2)==2) return b+c;
+ D p=d*(.3f*1.5f);
+ D a=c;
+ D s=p/4;
+ if(t<1)
+  {
+  t-=1;
+  D postFix=a*pow(2,10*(t));
+  //D postFix=a*pow(2,10*(t-=1));
+  return -.5f*(postFix*sin((t*d-s)*(2*aaPi)/p))+b;
+  }
+ t-=1;
+ D postFix=a*pow(2,-10*(t));
+ //D postFix=a*pow(2,-10*(t-=1));
+ return postFix*sin((t*d-s)*(2*aaPi)/p)*.5f+c+b;
+ }
+
+
+ D aa_TweenEase_ExpoIn                 (D t,D b,D c,D d)
+ {
+ return(t==0)?b:c*pow(2,10*(t/d-1))+b;
+ }
+
+
+ D aa_TweenEase_ExpoOut                (D t,D b,D c,D d)
+ {
+ return(t==d)?b+c:c*(-pow(2,-10*t/d)+1)+b;
+ }
+
+
+ D aa_TweenEase_ExpoInOut              (D t,D b,D c,D d)
+ {
+ if(t==0) return b;
+ if(t==d) return b+c;
+ t/=d/2;
+ if(t<1) return c/2*pow(2,10*(t-1))+b;
+ //if((t/=d/2)<1) return c/2*pow(2,10*(t-1))+b;
+ return c/2*(-pow(2,-10*--t)+2)+b;
+ }
+
+
+ D aa_TweenEase_LinearIn               (D t,D b,D c,D d)
+ {
+ return c*t/d+b;
+ }
+
+
+ D aa_TweenEase_LinearOut              (D t,D b,D c,D d)
+ {
+ return c*t/d+b;
+ }
+
+
+ D aa_TweenEase_LinearInOut            (D t,D b,D c,D d)
+ {
+ return c*t/d+b;
+ }
+
+
+ D aa_TweenEase_QuadIn                 (D t,D b,D c,D d)
+ {
+ t/=d;
+ return c*(t)*t+b;
+ //return c*(t/=d)*t+b;
+ }
+
+
+ D aa_TweenEase_QuadOut                (D t,D b,D c,D d)
+ {
+ t/=d;
+ return -c*(t)*(t-2)+b;
+ //return -c*(t/=d)*(t-2)+b;
+ }
+
+
+ D aa_TweenEase_QuadInOut              (D t,D b,D c,D d)
+ {
+ t/=d/2;
+ if(t<1) return ((c/2)*(t*t))+b;
+ //if((t/=d/2)<1) return ((c/2)*(t*t))+b;
+ --t;
+ return -c/2*(((t-2)*(t))-1)+b;
+ //return -c/2*(((t-2)*(--t))-1)+b;
+ }
+
+
+ D aa_TweenEase_QuartIn                (D t,D b,D c,D d)
+ {
+ t/=d;
+ return c*(t)*t*t*t+b;
+ //return c*(t/=d)*t*t*t+b;
+ }
+
+ D aa_TweenEase_QuartOut               (D t,D b,D c,D d)
+ {
+ t=t/d-1;
+ return -c*((t)*t*t*t-1)+b;
+ //return -c*((t=t/d-1)*t*t*t-1)+b;
+ }
+
+ D aa_TweenEase_QuartInOut             (D t,D b,D c,D d)
+ {
+ t/=d/2;
+ if(t<1) return c/2*t*t*t*t+b;
+ t-=2;
+ return -c/2*((t)*t*t*t-2)+b;
+ //if((t/=d/2)<1) return c/2*t*t*t*t+b;
+ //return -c/2*((t-=2)*t*t*t-2)+b;
+ }
+
+
+ D aa_TweenEase_QuintIn                (D t,D b,D c,D d)
+ {
+ t/=d;
+ return c*(t)*t*t*t*t+b;
+// return c*(t/=d)*t*t*t*t+b;
+ }
+
+ D aa_TweenEase_QuintOut               (D t,D b,D c,D d)
+ {
+ t=t/d-1;
+ return c*((t)*t*t*t*t+1)+b;
+ //return c*((t=t/d-1)*t*t*t*t+1)+b;
+ }
+
+ D aa_TweenEase_QuintInOut             (D t,D b,D c,D d)
+ {
+ t/=d/2;
+ if((t)<1) return c/2*t*t*t*t*t+b;
+ t-=2;
+ return c/2*((t)*t*t*t*t+2)+b;
+
+ //if((t/=d/2)<1) return c/2*t*t*t*t*t+b;
+ //return c/2*((t-=2)*t*t*t*t+2)+b;
+ }
+
+ D aa_TweenEase_SineIn                 (D t,D b,D c,D d)
+ {
+ return -c*cos(t/d*(aaPi/2))+c+b;
+ }
+
+ D aa_TweenEase_SineOut                (D t,D b,D c,D d)
+ {
+ return c*sin(t/d*(aaPi/2))+b;
+ }
+
+
+ D aa_TweenEase_SineInOut              (D t,D b,D c,D d)
+ {
+ return -c/2*(cos(aaPi*t/d)-1)+b;
+ }
+
+
+/*-----------------------------------------------------------------------*/
 
 
 
@@ -24460,13 +24919,25 @@ aaInputEngine calls aaInputStateGet
 
  B aa_InputSystemKeyEventProc          (HWND wnd,H msg,WPARAM wparm,LPARAM lparm,B extflag)
  {
+ S H entropy_counter=0;
  S _inputhookparms ihppstat;
  S _inputhookparms*ihpp=NULL;
  N virtCode=wparm;
  N scanCode=HIWORD(lparm)&0xff;
  //B old_is_caps,old_is_numl,old_is_scrl,old_is_shift,old_is_ctrl,old_is_alt,old_is_win;
 
- UNUSE(wnd);
+ if(entropy_counter==0LL)
+  {
+  aaEntropyPoolWrite(&aa.system_entropy,sizeof(msg),&msg);
+  aaEntropyPoolWrite(&aa.system_entropy,sizeof(wnd),&wnd);
+  aaEntropyPoolWrite(&aa.system_entropy,sizeof(wparm),&wparm);
+  aaEntropyPoolWrite(&aa.system_entropy,sizeof(lparm),&lparm);
+  aaEntropyPoolRead(&aa.system_entropy,4,&entropy_counter);
+  entropy_counter%=200;
+  entropy_counter++;
+  }
+ entropy_counter--;
+ //UNUSE(wnd);
  if(aa.input_system.mutex_handle!=0)
   {
   DWORD res;
@@ -24711,9 +25182,19 @@ aaInputEngine calls aaInputStateGet
  HWND actvhwnd,fochwnd,forghwnd;
  HWND pointhwnd;
  B oll;//,olm,olr;
+ S H entropy_counter=0;
 
  if(aa.input_system.ihke_que.handle==0)  {  aa_InputSystemHookedKeyEngineStart();    }
  if(inputstate==NULL) { return RET_BADPARM; }
+
+ if(entropy_counter==0LL)
+  {
+  aaEntropyPoolWrite(&aa.system_entropy,sizeof(_inputstate),inputstate);
+  entropy_counter%=200;
+  entropy_counter++;
+  }
+ entropy_counter--;
+
  inputstate->is_ok=NO;
  dokeys&=1; domouse&=1;
  ms=aaMicrosecsRunning();
@@ -25351,10 +25832,10 @@ else
  {
  D signx;
 
- if(x>0.) signx=1.;
- else signx=-1.;
- if(x==0.) return 0.;
- if(y==0.) return signx*aaPi/2.;
+ if(x>0.0) signx=1.0;
+ else signx=-1.0;
+ if(x==0.0) return 0.0;
+ if(y==0.0) return signx*aaPi/2.0;
  return atan2(x,y);
  }
 
@@ -25390,7 +25871,7 @@ else
    *p2=temp;
    }
   }
- for(k=0,le=2;k<(long)(log(framesize)/log(2.)+.5); k++)
+ for(k=0,le=2;k<(long)(log(framesize)/log(2.0)+0.5); k++)
   {
   le<<=1;
   le2=le>>1;
@@ -27336,7 +27817,7 @@ else
 
 /*-----------------------------------------------------------------------*/
 
- _geprecomp ecc_Bi[8]=
+ _geprecomp aa_ecc_Bi[8]=
  {
   {{25967493,-14356035,29566456,3660896,-12694345,4014787,27544626,-11754271,-6079156,2047605},{-12545711,934262,-2722910,3049990,-727428,9406986,12720692,5043384,19500929,-15469378},{-8738181,4489570,9688441,-14785194,10184609,-12363380,29287919,11864899,-24514362,-4438546},},
   {{15636291,-9688557,24204773,-7912398,616977,-16685262,27787600,-14772189,28944400,-1550024},{16568933,4717097,-11556148,-1102322,15682896,-11807043,16354577,-11775962,7689662,11199574},{30464156,-5976125,-11779434,-15670865,23220365,15915852,7512774,10017326,-17749093,-9920357},},
@@ -27348,7 +27829,7 @@ else
   {{-3151181,-5046075,9282714,6866145,-31907062,-863023,-18940575,15033784,25105118,-7894876},{-24326370,15950226,-31801215,-14592823,-11662737,-5090925,1573892,-2625887,2198790,-15804619},{-3099351,10324967,-2241613,7453183,-5446979,-2735503,-13812022,-16236442,-32461234,-12290683},},
  };
 
- _geprecomp ecc_base[32][8]={
+ _geprecomp aa_ecc_base[32][8]={
  {
   {{25967493,-14356035,29566456,3660896,-12694345,4014787,27544626,-11754271,-6079156,2047605},{-12545711,934262,-2722910,3049990,-727428,9406986,12720692,5043384,19500929,-15469378},{-8738181,4489570,9688441,-14785194,10184609,-12363380,29287919,11864899,-24514362,-4438546},},
   {{-12815894,-12976347,-21581243,11784320,-25355658,-2750717,-11717903,-3814571,-358445,-10211303},{-21703237,6903825,27185491,6451973,-29577724,-9554005,-15616551,11189268,-26829678,-5319081},{26966642,11152617,32442495,15396054,14353839,-12752335,-3128826,-9541118,-15472047,-4166697},},
@@ -27671,9 +28152,9 @@ else
   },
  };
 
- static _fe ecc_dox   ={-10913610,13857413,-15372611,6949391,114729,-8787816,-6275908,-3247719,-18696448,-12055116};
- static _fe ecc_sqrtm1={-32595792,-7943725,9377950,3500415,12389472,-272473,-25146209,-2005654,326686,11406482};
- static _fe ecc_dox2  ={-21827239,-5839606,-30745221,13898782,229458,15978800,-12551817,-6495438,29715968,9444199};
+ static _fe aa_ecc_dox   ={-10913610,13857413,-15372611,6949391,114729,-8787816,-6275908,-3247719,-18696448,-12055116};
+ static _fe aa_ecc_sqrtm1={-32595792,-7943725,9377950,3500415,12389472,-272473,-25146209,-2005654,326686,11406482};
+ static _fe aa_ecc_dox2  ={-21827239,-5839606,-30745221,13898782,229458,15978800,-12551817,-6495438,29715968,9444199};
 
 
 /*-----------------------------------------------------------------------*/
@@ -28875,9 +29356,9 @@ else
   if(aslide[i]>0) {   aa_Ed25519_GeP1P1ToP3(&u,&t);       aa_Ed25519_GeAdd(&t,&u,&Ai[aslide[i]/2]);        }
   else
   if(aslide[i]<0) {   aa_Ed25519_GeP1P1ToP3(&u,&t);       aa_Ed25519_GeSub(&t,&u,&Ai[(-aslide[i])/2]);     }
-  if(bslide[i]>0) {   aa_Ed25519_GeP1P1ToP3(&u,&t);       aa_Ed25519_GeMadd(&t,&u,&ecc_Bi[bslide[i]/2]);       }
+  if(bslide[i]>0) {   aa_Ed25519_GeP1P1ToP3(&u,&t);       aa_Ed25519_GeMadd(&t,&u,&aa_ecc_Bi[bslide[i]/2]);       }
   else
-  if(bslide[i]<0) {   aa_Ed25519_GeP1P1ToP3(&u,&t);       aa_Ed25519_GeMSub(&t,&u,&ecc_Bi[(-bslide[i])/2]);    }
+  if(bslide[i]<0) {   aa_Ed25519_GeP1P1ToP3(&u,&t);       aa_Ed25519_GeMSub(&t,&u,&aa_ecc_Bi[(-bslide[i])/2]);    }
   aa_Ed25519_GeP1P1ToP2(r,&t);
   }
  }
@@ -28897,7 +29378,7 @@ else
  aa_Ed25519_FeFromBytes(h->aaY,s);
  aa_Ed25519_Fe1(h->aaZ);
  aa_Ed25519_FeSq(u,h->aaY);
- aa_Ed25519_FeMul(v,u,ecc_dox);
+ aa_Ed25519_FeMul(v,u,aa_ecc_dox);
  aa_Ed25519_FeSub(u,u,h->aaZ);
  aa_Ed25519_FeAdd(v,v,h->aaZ);
  aa_Ed25519_FeSq(v3,v);
@@ -28915,7 +29396,7 @@ else
   {
   aa_Ed25519_FeAdd(check,vxx,u);
   if(aa_Ed25519_FeIsNonZero(check)) { return -1;     }
-  aa_Ed25519_FeMul(h->aaX,h->aaX,ecc_sqrtm1);
+  aa_Ed25519_FeMul(h->aaX,h->aaX,aa_ecc_sqrtm1);
   }
  if(aa_Ed25519_FeIsNegative(h->aaX)==(s[31]>>7))
   {
@@ -29031,7 +29512,7 @@ else
  aa_Ed25519_FeAdd(r->YplusX,p->aaY,p->aaX);
  aa_Ed25519_FeSub(r->YminusX,p->aaY,p->aaX);
  aa_Ed25519_FeCopy(r->aaZ,p->aaZ);
- aa_Ed25519_FeMul(r->T2d,p->aaT,ecc_dox2);
+ aa_Ed25519_FeMul(r->T2d,p->aaT,aa_ecc_dox2);
  }
 
 
@@ -29760,14 +30241,14 @@ else
  aa_Ed25519_Fe1(t->yplusx);
  aa_Ed25519_Fe1(t->yminusx);
  aa_Ed25519_Fe0(t->xy2d);
- aa_Ed25519_CMov(t,&ecc_base[pos][0],aa_Ed25519_Equal(babs,1));
- aa_Ed25519_CMov(t,&ecc_base[pos][1],aa_Ed25519_Equal(babs,2));
- aa_Ed25519_CMov(t,&ecc_base[pos][2],aa_Ed25519_Equal(babs,3));
- aa_Ed25519_CMov(t,&ecc_base[pos][3],aa_Ed25519_Equal(babs,4));
- aa_Ed25519_CMov(t,&ecc_base[pos][4],aa_Ed25519_Equal(babs,5));
- aa_Ed25519_CMov(t,&ecc_base[pos][5],aa_Ed25519_Equal(babs,6));
- aa_Ed25519_CMov(t,&ecc_base[pos][6],aa_Ed25519_Equal(babs,7));
- aa_Ed25519_CMov(t,&ecc_base[pos][7],aa_Ed25519_Equal(babs,8));
+ aa_Ed25519_CMov(t,&aa_ecc_base[pos][0],aa_Ed25519_Equal(babs,1));
+ aa_Ed25519_CMov(t,&aa_ecc_base[pos][1],aa_Ed25519_Equal(babs,2));
+ aa_Ed25519_CMov(t,&aa_ecc_base[pos][2],aa_Ed25519_Equal(babs,3));
+ aa_Ed25519_CMov(t,&aa_ecc_base[pos][3],aa_Ed25519_Equal(babs,4));
+ aa_Ed25519_CMov(t,&aa_ecc_base[pos][4],aa_Ed25519_Equal(babs,5));
+ aa_Ed25519_CMov(t,&aa_ecc_base[pos][5],aa_Ed25519_Equal(babs,6));
+ aa_Ed25519_CMov(t,&aa_ecc_base[pos][6],aa_Ed25519_Equal(babs,7));
+ aa_Ed25519_CMov(t,&aa_ecc_base[pos][7],aa_Ed25519_Equal(babs,8));
  aa_Ed25519_FeCopy(minust.yplusx,t->yminusx);
  aa_Ed25519_FeCopy(minust.yminusx,t->yplusx);
  aa_Ed25519_FeNeg(minust.xy2d,t->xy2d);
@@ -39817,6 +40298,99 @@ soff=moff=stage=0;
 
 
 
+ B aaSyncNew                           (_sync*sync,H initialcount,H maxcount,VP fmt,...)
+ {
+ #ifdef aa_VERSION
+ aa_ZIAG(__FUNCTION__);
+ #endif
+ if(sync==NULL) { return RET_MISSINGPARM; }
+ aaMemoryFill(sync,sizeof(_sync),0);
+ if(maxcount==0) { return RET_BADPARM; }
+ if(initialcount>maxcount) { return RET_BOUNDS; }
+ sync->magic=aaHPP(aaSyncNew);
+ aaVargsf4K(fmt);
+ if(maxcount==1)
+  {
+  if(initialcount>1) { return RET_BADPARM; }
+  sync->is_mutex=YES;
+  sync->handle=CreateMutex(NULL,initialcount,(CP)str4k.buf);
+  }
+ else
+  {
+  sync->is_mutex=NO;
+  sync->handle=CreateSemaphore(NULL,initialcount,maxcount,(CP)str4k.buf);
+  }
+ if(sync->handle==NULL) { return RET_FAILED; }
+ return RET_YES;
+ }
+
+
+ B aaSyncDelete                        (_sync*sync)
+ {
+ BOOL bl;
+
+ #ifdef aa_VERSION
+ aa_ZIAG(__FUNCTION__);
+ #endif
+ if(sync==NULL) { return RET_MISSINGPARM; }
+ if(sync->magic!=aaHPP(aaSyncNew)) { return RET_NOTINITIALIZED; }
+ if(sync->handle!=NULL)
+  {
+  bl=CloseHandle(sync->handle);
+  if(bl==0) { return RET_FAILED; }
+  }
+ aaMemoryFill(sync,sizeof(_sync),0);
+ return RET_YES;
+ }
+
+ B aaSyncLock                          (_sync*sync)
+ {
+ H res;
+
+ #ifdef aa_VERSION
+ aa_ZIAG(__FUNCTION__);
+ #endif
+ if(sync==NULL) { return RET_MISSINGPARM; }
+ if(sync->magic!=aaHPP(aaSyncNew)) { return RET_NOTINITIALIZED; }
+ res=WaitForSingleObject(sync->handle,0);
+ if(res==WAIT_ABANDONED) { return RET_FAILED; }
+ if(res==WAIT_FAILED)    { return RET_FAILED; }
+ if(res==WAIT_TIMEOUT)   { return RET_TIMEOUT; }
+ if(res!=WAIT_OBJECT_0)  { return RET_FAILED;  }
+ return RET_YES;
+ }
+
+
+
+ B aaSyncUnlock                        (_sync*sync,N unlockcount,NP prevunlockcount)
+ {
+ BOOL bl;
+
+ #ifdef aa_VERSION
+ aa_ZIAG(__FUNCTION__);
+ #endif
+ if(sync==NULL) { return RET_MISSINGPARM; }
+ if(sync->magic!=aaHPP(aaSyncNew)) { return RET_NOTINITIALIZED; }
+ if(prevunlockcount) { *prevunlockcount=0; }
+ if(unlockcount<0)   { return RET_BADPARM; }
+ if(sync->is_mutex==YES)
+  {
+  if(unlockcount>0) { return RET_BADPARM;  }
+  bl=ReleaseMutex(sync->handle);
+  }
+ else
+  {
+  bl=ReleaseSemaphore(sync->handle,unlockcount,prevunlockcount);
+  }
+ if(bl!=0) { return RET_FAILED; }
+ return RET_YES;
+ }
+
+
+/*-----------------------------------------------------------------------*/
+
+
+
 
  B aa_EventDefine                      (_aa_event*event,B manualreset,B startsignaled,VP fmt,...)
  {
@@ -39974,6 +40548,7 @@ soff=moff=stage=0;
  thrp->status.is_paused=YES;
  thrp->status.data=data;
  thrp->handle=CreateThread(NULL,0,(LPTHREAD_START_ROUTINE)proc,(VP)*handle,CREATE_SUSPENDED,&thrp->id);
+ //SetThreadAffinityMask(thrp->handle,1<<rand()%5);
  logg("thread created");
  if(startpaused!=YES)
   {
@@ -40276,8 +40851,6 @@ soff=moff=stage=0;
 
 
 /*-----------------------------------------------------------------------*/
-
-
 
 
  H aa_ProcessCrashTester               (VP parm)
@@ -41057,15 +41630,19 @@ soff=moff=stage=0;
    }
   if(ok)
    {
-   if((tmp=OpenProcess(PROCESS_ALL_ACCESS,FALSE,entry.th32ProcessID))!=NULL)
+
+   //if((tmp=OpenProcess(PROCESS_ALL_ACCESS,FALSE,entry.th32ProcessID))!=NULL)
+
+   if((tmp=OpenProcess(PROCESS_QUERY_INFORMATION|PROCESS_VM_READ,FALSE,entry.th32ProcessID))!=NULL)
     {
     processentry->process_handle=tmp;
     if(aa.core_system.GetProcessTimes(processentry->process_handle,&cc_time,&ee_time,&kk_time,&uu_time)==0) { oow; }
     if((ret=WinFileTimeToSysTime(&cc_time,&cc_sys))!=YES) { oops; }
     if((ret=aaTimeCompare(&cc_sys,0,&cc_secs))!=YES) { oops; }
     processentry->ms_running=cc_secs*1000LL;
-     aa.core_system.ntQueryInformationProcess(tmp,0,&pbi,sizeof(pbi),NULL);
-     pebAddress=pbi.PebBaseAddress;
+    aa.core_system.ntQueryInformationProcess(tmp,0,&pbi,sizeof(pbi),NULL);
+    pebAddress=pbi.PebBaseAddress;
+
      if(ReadProcessMemory(tmp,(PCHAR)pebAddress+0x10,&rtlUserProcParamsAddress,sizeof(PVOID),NULL)!=0)
       {
       if(ReadProcessMemory(tmp,(PCHAR)rtlUserProcParamsAddress+0x40,&commandLine,sizeof(commandLine),NULL)!=0)
@@ -41080,6 +41657,7 @@ soff=moff=stage=0;
         }
        }
       }
+
     if(aa.core_system.GetProcessFileName(tmp,(CP)processentry->exe_path,sizeof(processentry->exe_path))!=0)
      {
      aaStringCopyf(processentry->dev_path,"%s",processentry->exe_path);
@@ -42816,6 +43394,8 @@ function measure(lat1, lon1, lat2, lon2){  // generally used geo measurement fun
  aaCordSet(midcord,c3.x,c3.y);
  return RET_YES;
  }
+
+
 
 
 
@@ -53703,7 +54283,7 @@ oof;
  httpheader->data_bytes=0;
  if(str==NULL) { return RET_BADPARM; }
  if(bytes==0) { aaStringLen(str,&bytes); }
- if(bytes==0) { return RET_BADPARM; }
+// if(bytes==0) { return RET_BADPARM; }
  chars=bytes;
  aaStringCopy(txt,str);
  httpheader->bytes=chars;
@@ -56761,7 +57341,7 @@ oof;
 
 
 
- B aaTorFind                           (_tor*tor,W cport,W sport,HP index)
+ B aaTorFind                           (_tor*tor,W cport,W sport,HP index,QP age)
  {
  H j,c;
  _torprocess*tep;
@@ -56785,6 +57365,7 @@ oof;
   if(tep->c_port!=cport) { continue; }
   if(tep->s_port!=sport) { continue; }
   if(index)  { *index=j; }
+  if(age)    { *age=tep->secs_running; }
   return RET_YES;
   }
  return RET_NOTFOUND;
@@ -58714,7 +59295,12 @@ else
  if(type==1) ///////// jpeg
   {
   aa_JpegDecNew(&jpg,0);
-  if((ret=aa_JpegDecDecompress(&jpg,filemem,(H)filebytes))!=YES) { oops; }
+  if((ret=aa_JpegDecDecompress(&jpg,filemem,(H)filebytes))!=YES)
+   {
+   aa_JpegDecDelete(&jpg);
+   return ret;
+   //oops;
+   }
   aaSizeSet(&sz,jpg.width,jpg.height);
   if((ret=aaSurfaceCreate(&ih,&sz))!=RET_YES)
    {
@@ -59640,6 +60226,15 @@ else
   //aaDebugf("%i,%i,%i,%i",aaRectParts(surp->status.last_rect));
   surp->status.is_maximized=NO;
   }
+
+ if(surp->status.is_maximized)
+  {
+  if(aaSurfaceRequiresResize(handle,&rc1)==YES)
+   {
+   aaSurfaceRectSet(handle,&rc1);
+   }
+  }
+
  return RET_YES;
  }
 
@@ -60330,7 +60925,7 @@ else
  #endif
  aaFmt(fmt,argptr,txt);
  if((ret=aa_ObjectCheck(aa.surface_system.object_id,handle,(VP)&surp,NULL))!=RET_YES) { return ret; }
- txt[63]=NULL_CHAR;
+ txt[128]=NULL_CHAR;
  aaStringCopy(surp->status.title,txt);
  if(surp->status.is_visual==YES)
   {
@@ -62867,6 +63462,205 @@ noscale:
 
 
 
+
+
+ V aa_SurfaceQuadBezierSegment         (VP surfs,Z x0,Z y0,Z x1,Z y1,Z x2,Z y2,D weight,_rgba*pen)
+ {
+ _cord c1,c2;
+ Z sx,sy;
+ D dx,dy,xx,yy;
+ D xy,cur,err;
+ H handle;
+ _aa_surfaceobject*surp;
+
+ aaCast(surp,_aa_surfaceobject*,surfs);
+ handle=surp->self_handle;
+ sx=x2-x1;
+ sy=y2-y1;
+ dx=x0-x2;
+ dy=y0-y2;
+ xx=x0-x1;
+ yy=y0-y1;
+ xy=xx*sy+yy*sx;
+ cur=xx*sy-yy*sx;
+ if(cur!=0.0&&weight>0.0)
+  {
+  if(sx*(N)sx+sy*(N)sy>xx*xx+yy*yy)
+   {
+   x2=x0;
+   x0-=dx;
+   y2=y0;
+   y0-=dy;
+   cur=-cur;
+   }
+  xx=2.0*(4.0*weight*sx*xx+dx*dx);
+  yy=2.0*(4.0*weight*sy*yy+dy*dy);
+  sx=x0<x2?1:-1;
+  sy=y0<y2?1:-1;
+  xy=-2.0*sx*sy*(2.0*weight*xy+dx*dy);
+  if(cur*sx*sy<0.0)
+   {
+   xx=-xx;
+   yy=-yy;
+   xy=-xy;
+   cur=-cur;
+   }
+  dx=4.0*weight*(x1-x0)*sy*cur+xx/2.0+xy;
+  dy=4.0*weight*(y0-y1)*sx*cur+yy/2.0+xy;
+  if(weight<0.5&&(dy>xy||dx<xy))
+   {
+   cur=(weight+1.0)/2.0;
+   weight=sqrt(weight);
+   xy=1.0/(weight+1.0);
+   sx=floor((x0+2.0*weight*x1+x2)*xy/2.0+0.5);
+   sy=floor((y0+2.0*weight*y1+y2)*xy/2.0+0.5);
+   dx=floor((weight*x1+x0)*xy+0.5);
+   dy=floor((y1*weight+y0)*xy+0.5);
+   aa_SurfaceQuadBezierSegment(surfs,x0,y0,dx,dy,sx,sy,cur,pen);
+   dx=floor((weight*x1+x2)*xy+0.5);
+   dy=floor((y1*weight+y2)*xy+0.5);
+   aa_SurfaceQuadBezierSegment(surfs,sx,sy,dx,dy,x2,y2,cur,pen);
+   return;
+   }
+  err=dx+dy-xy;
+  do
+   {
+   c1.x=x0;
+   c1.y=y0;
+   aaSurfacePixelPut(handle,&c1,pen);
+   if(x0==x2&&y0==y2) return;
+   x1=2*err>dy;
+   y1=2*(err+yy)<-dy;
+   if(2*err<dx||y1)
+    {
+    y0+=sy;
+    dy+=xy;
+    err+=dx+=xx;
+    }
+   if(2*err>dx||x1)
+    {
+    x0+=sx;
+    dx+=xy;
+    err+=dy+=yy;
+    }
+   }
+  while(dy<=xy&&dx>=xy);
+  }
+ c1.x=x0;
+ c1.y=y0;
+ c2.x=x2;
+ c2.y=y2;
+ aaSurfaceLine(handle,&c1,&c2,pen);
+ }
+
+
+
+
+
+ B aaSurfaceBezier                     (H handle,_cord*c0,_cord*c1,_cord*c2,D weight,_rgba*p1)
+ {
+ B ret;
+ _aa_surfaceobject*surp;
+ D xx,yy,ww,t,q;
+ Z x,y,x0,y0,x1,y1,x2,y2;
+
+ #ifdef aa_VERSION
+ aa_ZIAG(__FUNCTION__);
+ #endif
+ if((ret=aa_ObjectCheck(aa.surface_system.object_id,handle,(VP)&surp,NULL))!=RET_YES) { return ret; }
+ if(c0==NULL) { return RET_MISSINGPARM; }
+ if(c1==NULL) { return RET_MISSINGPARM; }
+ if(c2==NULL) { return RET_MISSINGPARM; }
+ if(p1==NULL) { return RET_MISSINGPARM; }
+
+ //weight=weight*1000.0; // weight = 0 - 100.0 %
+ x0=c0->x;
+ y0=c0->y;
+ x1=c1->x;
+ y1=c1->y;
+ x2=c2->x;
+ y2=c2->y;
+ x=x0-2*x1+x2;
+ y=y0-2*y1+y2;
+ xx=x0-x1;
+ yy=y0-y1;
+ if(xx*(x2-x1)>0)
+  {
+  if(yy*(y2-y1)>0)
+   {
+   if(fabs(xx*y)>fabs(yy*x))
+    {
+    x0=x2;
+    x2=xx+x1;
+    y0=y2;
+    y2=yy+y1;
+    }
+   }
+  if(x0==x2||weight==1.0)
+   {
+   t=(x0-x1)/(D)x;
+   }
+  else
+   {
+   q=sqrt(4.0*weight*weight*(x0-x1)*(x2-x1)+(x2-x0)*(N)(x2-x0));
+   if(x1<x0) { q=-q; }
+   t=(2.0*weight*(x0-x1)-x0+x2+q)/(2.0*(1.0-weight)*(x2-x0));
+   }
+  q=1.0/(2.0*t*(1.0-t)*(weight-1.0)+1.0);
+  xx=(t*t*(x0-2.0*weight*x1+x2)+2.0*t*(weight*x1-x0)+x0)*q;
+  yy=(t*t*(y0-2.0*weight*y1+y2)+2.0*t*(weight*y1-y0)+y0)*q;
+  ww=t*(weight-1.0)+1.0;
+  ww*=ww*q;
+  weight=((1.0-t)*(weight-1.0)+1.0)*sqrt(q);
+  x=floor(xx+0.5);
+  y=floor(yy+0.5);
+  yy=(xx-x0)*(y1-y0)/(x1-x0)+y0;
+  aa_SurfaceQuadBezierSegment(surp,x0,y0,x,floor(yy+0.5),x,y,ww,p1);
+  yy=(xx-x2)*(y1-y2)/(x1-x2)+y2;
+  y1=floor(yy+0.5);
+  x0=x1=x;
+  y0=y;
+  }
+ if((y0-y1)*(N)(y2-y1)>0)
+  {
+  if(y0==y2||weight==1.0)
+   {
+   t=(y0-y1)/(y0-2.0*y1+y2);
+   }
+  else
+   {
+   q=sqrt(4.0*weight*weight*(y0-y1)*(y2-y1)+(y2-y0)*(long)(y2-y0));
+   if(y1<y0) { q=-q; }
+   t=(2.0*weight*(y0-y1)-y0+y2+q)/(2.0*(1.0-weight)*(y2-y0));
+   }
+  q=1.0/(2.0*t*(1.0-t)*(weight-1.0)+1.0);
+  xx=(t*t*(x0-2.0*weight*x1+x2)+2.0*t*(weight*x1-x0)+x0)*q;
+  yy=(t*t*(y0-2.0*weight*y1+y2)+2.0*t*(weight*y1-y0)+y0)*q;
+  ww=t*(weight-1.0)+1.0;
+  ww*=ww*q;
+  weight=((1.0-t)*(weight-1.0)+1.0)*sqrt(q);
+  x=floor(xx+0.5);
+  y=floor(yy+0.5);
+  xx=(x1-x0)*(yy-y0)/(y1-y0)+x0;
+  aa_SurfaceQuadBezierSegment(surp,x0,y0,floor(xx+0.5),y,x,y,ww,p1);
+
+  xx=(x1-x2)*(yy-y2)/(y1-y2)+x2;
+  x1=floor(xx+0.5);
+  x0=x;
+  y0=y1=y;
+  }
+ aa_SurfaceQuadBezierSegment(surp,x0,y0,x1,y1,x2,y2,weight*weight,p1);
+ return RET_YES;
+ }
+
+
+
+
+
+
+
+
+
  B aaSurfaceArc                        (H handle,_rect*rect,N astart,N astop,N arot,_rgba*p1)
  {
  D rad_start,rad_stop,rad_rot;
@@ -64429,7 +65223,7 @@ noscale:
   aaSurfaceLabel(handle,&r2,(p1==NULL)?&col_gray[4]:p1,fhandle,(p2==NULL)?&col_gray[23]:p2,1,0,0,1,0,"%s",pa.bp);
   break;
   }
- if(surp->status.is_log_write) { aaLog(-777,"%s",txt); }
+ if(surp->status.is_log_write) { aaLog(-555,"%s",txt); }
  return RET_YES;
  }
 
@@ -65253,6 +66047,7 @@ noscale:
  N xi1,xi2;
  _cord*cd1p;
  _cord*cd2p;
+ //_cord cd3;
 
  #ifdef aa_VERSION
  aa_ZIAG(__FUNCTION__);
@@ -65264,6 +66059,8 @@ noscale:
 
  if(which==1)  {  cd1p=&ccc2;  cd2p=&ccc1;  }
  else          {  cd1p=&ccc1;  cd2p=&ccc2;  }
+
+ //aaCordSet(&cd3,800,800);
 
  if(pxi1<0.0&&pxi2<0.0) { return RET_BOUNDS; }
  if(pxi1>1.0&&pxi2>1.0) { return RET_BOUNDS; }
@@ -65301,7 +66098,7 @@ noscale:
  aaCordSet(&c2,(N)x1,(N)y1);
  aaCordSet(&c3,(N)x2,(N)y2);
 
-
+//aSurfaceBezier(ezy.canvas.handle,&cd[0],&cd[1],&cd[2],a,&col_gray[20]);
 
  if(thick>1)
   {
@@ -65313,6 +66110,9 @@ noscale:
   aaPixelStyleSet(&pstyle_data,7,1,(thick/2),(thick/2),0,0,0,0,handle); aaSurfaceLine(handle,&c1,&c2,pn2);
   aaPixelStyleSet(&pstyle_data,7,1,(thick/2),(thick/2),0,0,0,0,handle); aaSurfaceLine(handle,&c1,&c3,pn2);
   aaPixelStyleSet(&pstyle_data,7,1,(thick/2),(thick/2),0,0,0,0,handle); aaSurfaceLine(handle,&c1,&c0,pn2);
+
+  //aaSurfaceBezier(handle,&c1,&c0,&cd3,20,pn1);
+
   aaSurfacePixelStyleSet(handle,&pstyle_save);
   }
  else
@@ -65794,7 +66594,7 @@ noscale:
  aaStringLen(str,&sl);
  if(p1==NULL) { aaRgbaCopyWithAlpha(&pn1,&col_pastelblue[28],255); }
  else         { aaRgbaCopy(&pn1,p1); }
- if(p2==NULL) { aaRgbaCopyWithAlpha(&pn2,&col_pastelblue[14],255); }
+ if(p2==NULL) { aaRgbaCopyWithAlpha(&pn2,&col_pastelblue[3],255); }
  else         { aaRgbaCopy(&pn2,p2); }
  if(p3==NULL) { aaRgbaCopyWithAlpha(&pn3,&col_gray[31],255); }
  else         { aaRgbaCopy(&pn3,p3); }
@@ -65828,10 +66628,10 @@ noscale:
   {
   if(surp->status.icon_mem!=NULL) { x=52; }
   else                            { x=10; }
-  aaSurfaceLabel(handle,&rc1,&col_null,fonthandle,&col_gray[9],x,0,0,1,0,"%s",str);
+  aaSurfaceLabel(handle,&rc1,&col_null,fonthandle,&col_pastelblue[1],x,0,0,1,0,"%s",str);
   aaRectAdjust(&rc1,-1,-1,0,0);
   aaSurfaceLabel(handle,&rc1,&col_null,fonthandle,&pn3,x,0,0,1,0,"%s",str);
-  aaRectAdjust(&rc1,+1,+1,0,0);
+  aaRectAdjust(&rc1,+2,+2,0,0);
   }
  if(surp->status.icon_mem!=NULL)
   {
@@ -66915,6 +67715,174 @@ noscale:
 
 
 /*-----------------------------------------------------------------------*/
+
+ B aaTweenInit                         (_tween*tween,B ease,D start,D delta,D duration,D delay,Z loop)
+ {
+ #ifdef aa_VERSION
+ aa_ZIAG(__FUNCTION__);
+ #endif
+ if(tween==NULL) { return RET_MISSINGPARM; }
+ if(ease>32) { return RET_BADPARM; }
+ aaMemoryFill(tween,sizeof(_tween),0);
+ tween->magic=aaHPP(aaTweenInit);
+ tween->ease=ease;
+ tween->start=start;
+ tween->delta=delta;
+ tween->t.duration=duration;
+ tween->t.loop=loop;
+ tween->d.duration=delay;
+ tween->num=start;
+ switch(ease)
+  {
+  case TweenEase_BackIn:       tween->ease_proc=aa_TweenEase_BackIn; break;
+  case TweenEase_BackOut:      tween->ease_proc=aa_TweenEase_BackOut; break;
+  case TweenEase_BackInOut:    tween->ease_proc=aa_TweenEase_BackInOut; break;
+  case TweenEase_BounceIn:     tween->ease_proc=aa_TweenEase_BounceIn; break;
+  case TweenEase_BounceOut:    tween->ease_proc=aa_TweenEase_BounceOut; break;
+  case TweenEase_BounceInOut:  tween->ease_proc=aa_TweenEase_BounceInOut; break;
+  case TweenEase_CircIn:       tween->ease_proc=aa_TweenEase_CircIn; break;
+  case TweenEase_CircOut:      tween->ease_proc=aa_TweenEase_CircOut; break;
+  case TweenEase_CircInOut:    tween->ease_proc=aa_TweenEase_CircInOut; break;
+  case TweenEase_CubicIn:      tween->ease_proc=aa_TweenEase_CubicIn; break;
+  case TweenEase_CubicOut:     tween->ease_proc=aa_TweenEase_CubicOut; break;
+  case TweenEase_CubicInOut:   tween->ease_proc=aa_TweenEase_CubicInOut; break;
+  case TweenEase_ElasticIn:    tween->ease_proc=aa_TweenEase_ElasticIn; break;
+  case TweenEase_ElasticOut:   tween->ease_proc=aa_TweenEase_ElasticOut; break;
+  case TweenEase_ElasticInOut: tween->ease_proc=aa_TweenEase_ElasticInOut; break;
+  case TweenEase_ExpoIn:       tween->ease_proc=aa_TweenEase_ExpoIn; break;
+  case TweenEase_ExpoOut:      tween->ease_proc=aa_TweenEase_ExpoOut; break;
+  case TweenEase_ExpoInOut:    tween->ease_proc=aa_TweenEase_ExpoInOut; break;
+  case TweenEase_LinearIn:     tween->ease_proc=aa_TweenEase_LinearIn; break;
+  case TweenEase_LinearOut:    tween->ease_proc=aa_TweenEase_LinearOut; break;
+  case TweenEase_LinearInOut:  tween->ease_proc=aa_TweenEase_LinearInOut; break;
+  case TweenEase_QuadIn:       tween->ease_proc=aa_TweenEase_QuadIn; break;
+  case TweenEase_QuadOut:      tween->ease_proc=aa_TweenEase_QuadOut; break;
+  case TweenEase_QuadInOut:    tween->ease_proc=aa_TweenEase_QuadInOut; break;
+  case TweenEase_QuartIn:      tween->ease_proc=aa_TweenEase_QuartIn; break;
+  case TweenEase_QuartOut:     tween->ease_proc=aa_TweenEase_QuartOut; break;
+  case TweenEase_QuartInOut:   tween->ease_proc=aa_TweenEase_QuartInOut; break;
+  case TweenEase_QuintIn:      tween->ease_proc=aa_TweenEase_QuintIn; break;
+  case TweenEase_QuintOut:     tween->ease_proc=aa_TweenEase_QuintOut; break;
+  case TweenEase_QuintInOut:   tween->ease_proc=aa_TweenEase_QuintInOut; break;
+  case TweenEase_SineIn:       tween->ease_proc=aa_TweenEase_SineIn; break;
+  case TweenEase_SineOut:      tween->ease_proc=aa_TweenEase_SineOut; break;
+  case TweenEase_SineInOut:    tween->ease_proc=aa_TweenEase_SineInOut; break;
+  }
+ return RET_YES;
+ }
+
+
+
+
+ B aaTweenPlay                         (_tween*tween)
+ {
+ #ifdef aa_VERSION
+ aa_ZIAG(__FUNCTION__);
+ #endif
+ if(tween==NULL) { return RET_MISSINGPARM; }
+ if(tween->magic!=aaHPP(aaTweenInit)) { return RET_NOTINITIALIZED; }
+ if(tween->d.duration>0&&tween->d.time!=tween->d.duration)  { tween->d.state=1; }
+ else                                                       { tween->t.state=1; }
+ return RET_YES;
+ }
+
+
+ B aaTweenPause                        (_tween*tween)
+ {
+ #ifdef aa_VERSION
+ aa_ZIAG(__FUNCTION__);
+ #endif
+ if(tween==NULL) { return RET_MISSINGPARM; }
+ if(tween->magic!=aaHPP(aaTweenInit)) { return RET_NOTINITIALIZED; }
+ tween->d.state=0;
+ tween->t.state=0;
+ return RET_YES;
+ }
+
+ B aaTweenStop                         (_tween*tween)
+ {
+ #ifdef aa_VERSION
+ aa_ZIAG(__FUNCTION__);
+ #endif
+ if(tween==NULL) { return RET_MISSINGPARM; }
+ if(tween->magic!=aaHPP(aaTweenInit)) { return RET_NOTINITIALIZED; }
+ aaTweenPause(tween);
+ tween->d.time=0;
+ tween->t.time=0;
+ return RET_YES;
+ }
+
+
+ B aaTweenFinished                     (_tween*tween)
+ {
+ #ifdef aa_VERSION
+ aa_ZIAG(__FUNCTION__);
+ #endif
+ if(tween==NULL) { return RET_MISSINGPARM; }
+ if(tween->magic!=aaHPP(aaTweenInit)) { return RET_NOTINITIALIZED; }
+ return tween->t.time==tween->t.duration?1:0;
+ }
+
+
+ B aaTweenUpdate                       (_tween*tween)
+ {
+ _tweentimer*tt;
+
+ #ifdef aa_VERSION
+ aa_ZIAG(__FUNCTION__);
+ #endif
+ if(tween==NULL) { return RET_MISSINGPARM; }
+ if(tween->magic!=aaHPP(aaTweenInit)) { return RET_NOTINITIALIZED; }
+ if(tween->d.duration>0)
+  {
+  tt=&tween->d;
+  tt->time+=tt->state;
+  if(tt->time>tt->duration)
+   {
+   tt->time=tt->duration;
+   if(tt->loop==0) tt->state=0;           else
+   if(tt->loop==1) tt->state=tt->time=0;  else
+   if(tt->loop==2) tt->state=1;
+   }
+  else
+  if(tt->time<0)
+   {
+   tt->time=0;
+   if(tt->loop==0) tt->state=0;  else
+   if(tt->loop==2) tt->state=1;
+   }
+  if(tween->d.time==tween->d.duration)
+   {
+   tween->t.state=1;
+   }
+  }
+ tt=&tween->t;
+ tt->time+=tt->state;
+ if(tt->time>tt->duration)
+  {
+  tt->time=tt->duration;
+  if(tt->loop==0) tt->state=0;           else
+  if(tt->loop==1) tt->state=tt->time=0;  else
+  if(tt->loop==2) tt->state=1;
+  }
+ else
+ if(tt->time<0)
+  {
+  tt->time=0;
+  if(tt->loop==0) tt->state=0;  else
+  if(tt->loop==2) tt->state=1;
+  }
+ tween->percent=tween->t.time/tween->t.duration;
+ tween->num=tween->ease_proc(tween->t.time,tween->start,tween->delta,tween->t.duration);
+ return RET_YES;
+ }
+
+
+
+
+
+/*-----------------------------------------------------------------------*/
+
 
 
 
@@ -70160,8 +71128,6 @@ redo:
      if(mode==0) { odata[(i*2)+0]=(F)dub; }
      else
      if(mode==3) { odata[(i)]=(F)dub; }
-
-
      dub=(D)pcm16[(i*2)+1];
      dub=dub/32768.0;
      if(dub>+1.0) dub=+1.0;
@@ -70170,7 +71136,6 @@ redo:
      if(mode==0)  odata[(i*2)+1]=(F)dub;
      else
      if(mode==3)  odata[isamples+i]=(F)dub;
-
      }
     }
    }
@@ -70387,15 +71352,12 @@ redo:
    if(lv>+32760) { lv=+32760; }
    if(rv<-32760) { rv=-32760; }
    if(rv>+32760) { rv=+32760; }
-
    o_pos*=2;
    aa.audio_system.ch_block[o_pos++]=rv;
    aa.audio_system.ch_block[o_pos]=lv;
-
    oaccum+=oratio;   o_pos=(H)oaccum;
    iaccum+=iratio;   i_pos=(H)iaccum;
    }
-
 
  if(odata==NULL)  {  *osamples=o_pos;  return RET_YES;  }
  pcmi=(IP)odata;
@@ -70484,7 +71446,7 @@ redo:
  aapitchtempo->piano=(N)(oct*12)+note;
  sem=(oct*12)+note;
  sem=sem+fine;
- pv=pow(2.,sem/12.);
+ pv=pow(2.0,sem/12.0);
  if(aaBitGet(mode,0))  {  aapitchtempo->pitch=pv;  }
  if(aaBitGet(mode,1))  {  aapitchtempo->tempo=1.0/pv;  }
  return RET_YES;
@@ -70513,7 +71475,7 @@ redo:
  aapitchtempo->piano=(N)(oct*12)+note;
  sem=(oct*12)+note;
  sem=sem+fine;
- pv=pow(2.,sem/12.);
+ pv=pow(2.0,sem/12.0);
  aapitchtempo->pitch=pv;
  aapitchtempo->tempo=1.0/pv;
  //aaDebugf("octave=%i note=%i pitch=%.2f",octave,note,pv);
@@ -70595,21 +71557,21 @@ redo:
     //window=-.5*cos(2.*aaPi*(D)k/(D)aapitchshift->frame_size)+.5;
     window=aapitchshift->window[k];
     aapitchshift->fft_worksp[2*k]=aapitchshift->fifo_in[k]*window;
-    aapitchshift->fft_worksp[2*k+1]=0.;
+    aapitchshift->fft_worksp[2*k+1]=0.0;
     }
    aa_AudioSystemFFT(aapitchshift->fft_worksp,aapitchshift->frame_size,-1);
    for(k=0;k<=fftframesize2;k++)
     {
     real=aapitchshift->fft_worksp[2*k];
     imag=aapitchshift->fft_worksp[2*k+1];
-    magn=2.*sqrt(real*real+imag*imag);
-    phase=0.;
-    if(imag!=0.)
+    magn=2.0*sqrt(real*real+imag*imag);
+    phase=0.0;
+    if(imag!=0.0)
      {
-     if(imag>0.)   signx=+1.;
-     else          signx=-1.;
-     if(real==0.)  phase=signx*aaPi/2.0;
-     else          phase=atan2(imag,real);
+     if(imag>0.0)   signx=+1.0;
+     else           signx=-1.0;
+     if(real==0.0)  phase=signx*aaPi/2.0;
+     else           phase=atan2(imag,real);
      }
     tmp=phase-aapitchshift->last_phase[k];
     aapitchshift->last_phase[k]=phase;
@@ -70652,7 +71614,7 @@ redo:
     }
    for(k=aapitchshift->frame_size+2;k<2*aapitchshift->frame_size;k++)
     {
-    aapitchshift->fft_worksp[k]=0.;
+    aapitchshift->fft_worksp[k]=0.0;
     }
    aa_AudioSystemFFT(aapitchshift->fft_worksp,aapitchshift->frame_size,1);
    for(k=0;k<aapitchshift->frame_size;k++)
@@ -74346,13 +75308,15 @@ typedef struct _FILE_STANDARD_INFO {
  dwlkp->status.proc=proc;
  aaStringLen(dwlkp->status.root,&dwlkp->root_sl);
  aaStringCopyf(txt,"%s/%s",dwlkp->status.root,dwlkp->status.spec);
+ //aaDebugf("=%s",txt);
+/// aaStringCopyf(txt,"%s/*.",dwlkp->status.root);
   dwlkp->ti=0;
    if((ret=aaDirOpen(&dwlkp->status.dir.handle,(dwlkp->status.is_incfiles),txt))!=YES) { oops;  }
    if((ret=aaDirStatus(dwlkp->status.dir.handle,&dwlkp->status.dir.status,100))!=YES) { oops; }
    aaStringCopyf(dwlkp->status.cur_dir,"%s",dwlkp->status.dir.status.file_spec);
    aaStringFindChar(dwlkp->status.cur_dir,0,&pos,'/',YES,0,NO);
    if(pos!=0xffffffff) {  dwlkp->status.cur_dir[pos+1]=NULL_CHAR; }
-  if((ret=aaListNew(&dwlkp->status.list,YES,0,0,1))!=YES) { oops; }
+  if((ret=aaListNew(&dwlkp->status.list,YES,_8K,0,1))!=YES) { oops; }
  dwlkp->stage=20;
  return RET_YES;
  }
@@ -74454,6 +75418,7 @@ if(dwlkp->in_proc)
    if(pos!=0xffffffff) {  dwlkp->status.cur_dir[pos+1]=NULL_CHAR; }
    aaStringCopyf(str,"%s%s",dwlkp->status.cur_dir,dwlkp->status.dir.status.entry[ti].file_name);
    aaStringCopyf(str,"%s",&str[dwlkp->root_sl]);
+
    if(dwlkp->status.dir.status.entry[ti].is_dotty==NO)
     {
     while(1)
@@ -74488,10 +75453,11 @@ if(dwlkp->in_proc)
      break;
      }
     }
+
    if(dwlkp->status.dir.status.entry[ti].is_dotty==NO&&dwlkp->status.dir.status.entry[ti].is_folder==YES)
     {
     depth=dwlkp->dms.height/2;
-    if(depth<=dwlkp->status.max_depth)
+    if(dwlkp->status.max_depth>depth)
      {
      aaDirStatus(dwlkp->status.dir.handle,&dwlkp->status.dir.status,1);
      aaStringCopyf(txt,"%s",dwlkp->status.dir.status.file_spec);
@@ -74517,6 +75483,7 @@ if(dwlkp->in_proc)
     dwlkp->status.total_found=dwlkp->status.total_files_found+dwlkp->status.total_folders_found;
     break;
     }
+
    if(dwlkp->status.dir.status.entry[ti].is_dotty==NO&&dwlkp->status.dir.status.entry[ti].is_folder==NO)
     {
     dwlkp->status.total_files_found++;
@@ -76357,7 +77324,7 @@ If lpOverlapped is not NULL, lpNumberOfBytesRead can be NULL. If this is an over
  if((ret=aaFileStreamOffsetSet(textloader->fsu.handle,offset))!=YES) { oops; }
  aaFileStreamStatus(textloader->fsu.handle,&textloader->fsu.status);
  aaMemoryUnitAllocate(&textloader->bulk_mem,_128K);
- aaListNew(&textloader->list,YES,0,0,1);
+ aaListNew(&textloader->list,YES,_8K,0,1);
  textloader->proc=proc;
  return RET_YES;
  }
@@ -79431,6 +80398,7 @@ If lpOverlapped is not NULL, lpNumberOfBytesRead can be NULL. If this is an over
  {
  B ret;
  B file[_1K];
+ B ch;
  G i;
 
  #ifdef aa_VERSION
@@ -79448,11 +80416,15 @@ If lpOverlapped is not NULL, lpNumberOfBytesRead can be NULL. If this is an over
  if((ret=aaMemoryAllocate((VP)&bififile->fsu,bififile->fsu_count*sizeof(_filestreamunit)))!=YES) { oops; }
  aaMemoryNameSet(bififile->fsu,"bififsu");
  aaStringCopyf(bififile->path,"%s",str4k.buf);
+ aaStringLastCharGet(bififile->path,0,&ch);
+ if(ch==BSLASH_CHAR||ch==FSLASH_CHAR) { aaStringLastCharSet(bififile->path,0,0,1); }
+ aaStringReplaceChar(bififile->path,0,BSLASH_CHAR,FSLASH_CHAR);
  if(prefix) { aaStringCopyf(bififile->prefix,"%s",prefix); }
  //if(bififile->prefix[0]) { aaStringAppendf(bififile->prefix,"_"); }
  ///aaStringAppendf(bififile->prefix,"%I64d_",bififile->bifi_size);
  ///aaStringAppendf(bififile->prefix,"%I64d_",bififile->bifi_vars);
  bififile->data_off=sizeof(_bifivar)*bifivars;
+ //if(bifivars) { bififile->data_off+=(bifivars/8)+1; }
  if((ret=aaFileFolderExists(bififile->path))!=YES)
   {
   if((ret=aaFileFolderCreate(bififile->path))!=YES) { oops; }
@@ -79502,14 +80474,14 @@ If lpOverlapped is not NULL, lpNumberOfBytesRead can be NULL. If this is an over
 
 
 
- B aaBifiRead                          (_bififile*bififile,Q off,Q len,VP data)
+ B aaBifiRead                          (_bififile*bififile,G off,Q len,VP data)
  {
  B ret;
  H i,mx,han;
  Q div,mod,vol,toe;
  Q todo,done;
  B file[_1K];
- B block[_8K];
+ B block[_16K];
  BP bp;
 
  #ifdef aa_VERSION
@@ -79518,6 +80490,7 @@ If lpOverlapped is not NULL, lpNumberOfBytesRead can be NULL. If this is an over
  objTest(bififile,aaBifiNew);
  mx=bififile->fsu_count;
  aaMissingParm(data);
+ off+=bififile->data_off;
  bp=(BP)data;
  done=0;
  redo:
@@ -79526,7 +80499,7 @@ If lpOverlapped is not NULL, lpNumberOfBytesRead can be NULL. If this is an over
  vol=div;
  if(bififile->prefix[0]) { aaStringCopyf(file,"%s/%s%I64u.bifi",bififile->path,bififile->prefix,vol); }
  else                    { aaStringCopyf(file,"%s/%I64u.bifi",bififile->path,vol); }
- //aaDebugf("file=%s",file);
+ //aaDebugf("file=%s %I64d %I64d",file,bififile->data_off,off);
  for(i=0;i<mx;i++)
   {
   if(bififile->fsu[i].handle==0) { continue; }
@@ -79545,7 +80518,7 @@ If lpOverlapped is not NULL, lpNumberOfBytesRead can be NULL. If this is an over
    aaFileStreamDestroy(bififile->fsu[i].handle);
    aaMemoryFill(&bififile->fsu[i],sizeof(_filestreamunit),0);
    }
-  if((ret=aaFileStreamOpenQuick(&han,file))!=YES) { return ret; }
+  if((ret=aaFileStreamOpenQuick(&han,file))!=YES) {  return ret; }
   bififile->fsu[i].handle=han;
   }
 
@@ -79568,11 +80541,6 @@ If lpOverlapped is not NULL, lpNumberOfBytesRead can be NULL. If this is an over
  toe=bififile->fsu[i].status.bytes-mod;
  while(1)
   {
-  if(toe==0)
-   {
-   aaFileStreamStatus(bififile->fsu[i].handle,&bififile->fsu[i].status);
-   goto redo;
-   }
   todo=len-done;
   if(todo==0) { break; }
   todo=aaNumRoof(todo,sizeof(block));
@@ -79583,7 +80551,14 @@ If lpOverlapped is not NULL, lpNumberOfBytesRead can be NULL. If this is an over
    bp+=(H)todo;
    done+=todo;
    toe-=todo;
+   off+=todo;
    }
+   if(toe==0)
+    {
+    aaFileStreamStatus(bififile->fsu[i].handle,&bififile->fsu[i].status);
+    goto redo;
+    }
+
   }
  aaFileStreamStatus(bififile->fsu[i].handle,&bififile->fsu[i].status);
  return RET_YES;
@@ -79592,7 +80567,7 @@ If lpOverlapped is not NULL, lpNumberOfBytesRead can be NULL. If this is an over
 
 
 
- B aaBifiWritef                        (_bififile*bififile,Q off,QP len,VP fmt,...)
+ B aaBifiWritef                        (_bififile*bififile,G off,QP len,VP fmt,...)
  {
  B ret;
 
@@ -79601,6 +80576,7 @@ If lpOverlapped is not NULL, lpNumberOfBytesRead can be NULL. If this is an over
  #endif
  objTest(bififile,aaBifiNew);
  aaVargsf4K(fmt);
+ //off+=bififile->data_off;
  if(len) { *len=0; }
  if((ret=aaBifiWrite(bififile,off,(Q)str4k.len,str4k.buf))!=RET_YES) { return ret; }
  if(len) { *len=(Q)str4k.len; }
@@ -79614,7 +80590,7 @@ If lpOverlapped is not NULL, lpNumberOfBytesRead can be NULL. If this is an over
 
 
 
- B aaBifiWrite                         (_bififile*bififile,Q off,Q len,VP data)
+ B aaBifiWrite                         (_bififile*bififile,G off,Q len,VP data)
  {
  B ret;
  H i,mx,han;
@@ -79628,6 +80604,7 @@ If lpOverlapped is not NULL, lpNumberOfBytesRead can be NULL. If this is an over
  aa_ZIAG(__FUNCTION__);
  #endif
  objTest(bififile,aaBifiNew);
+ off+=bififile->data_off;
  mx=bififile->fsu_count;
  bp=(BP)data;
  done=0;
@@ -79679,11 +80656,6 @@ If lpOverlapped is not NULL, lpNumberOfBytesRead can be NULL. If this is an over
  if(bp==NULL) { aaMemoryFill(block,sizeof(block),0); }
  while(1)
   {
-  if(toe==0)
-   {
-   aaFileStreamStatus(bififile->fsu[i].handle,&bififile->fsu[i].status);
-   goto redo;
-   }
   todo=len-done;
   if(todo==0) { break; }
   todo=aaNumRoof(todo,sizeof(block));
@@ -79695,7 +80667,14 @@ If lpOverlapped is not NULL, lpNumberOfBytesRead can be NULL. If this is an over
    if(bp!=NULL)    {  bp+=(H)todo;  }
    done+=todo;
    toe-=todo;
+   off+=todo;
    }
+   if(toe==0)
+    {
+    aaFileStreamStatus(bififile->fsu[i].handle,&bififile->fsu[i].status);
+    goto redo;
+    }
+
   }
  aaFileStreamStatus(bififile->fsu[i].handle,&bififile->fsu[i].status);
  return RET_YES;
@@ -79706,6 +80685,32 @@ If lpOverlapped is not NULL, lpNumberOfBytesRead can be NULL. If this is an over
 
 
 
+ B aaBifiCopy                          (_bififile*bififile,G off,G doff,Q len)
+ {
+ B ret;
+ B block[_8K];
+ Q todo;
+
+ #ifdef aa_VERSION
+ aa_ZIAG(__FUNCTION__);
+ #endif
+ objTest(bififile,aaBifiNew);
+ if(off==doff)    {  return RET_YES;  }
+ if(len==0)       {  return RET_YES;  }
+ while(1)
+  {
+  todo=aaNumRoof(len,_4K);
+  if(todo==0LL) { break; }
+  if((ret=aaBifiRead(bififile,off,todo,block))!=YES) { oops; break; }
+  if((ret=aaBifiWrite(bififile,doff,todo,block))!=YES) { oops; break; }
+  off+=todo;
+  doff+=todo;
+  len-=todo;
+  }
+ return RET_YES;
+ }
+
+
 
  B aaBifiVarSet                        (_bififile*bififile,VP name,H bytes,VP data)
  {
@@ -79713,8 +80718,12 @@ If lpOverlapped is not NULL, lpNumberOfBytesRead can be NULL. If this is an over
  H sl;
  B rdig[32];
  _bifivar var;
- Q hash,hi,off;
+ _bifivar car;
+ Q hash,hi;
+ G off;
+ B flag;
  HP hp;
+ //B bit;
 
  #ifdef aa_VERSION
  aa_ZIAG(__FUNCTION__);
@@ -79727,26 +80736,40 @@ If lpOverlapped is not NULL, lpNumberOfBytesRead can be NULL. If this is an over
  if(data==NULL)             { return RET_BADPARM;      }
  if(bififile->bifi_vars==0) { return RET_NOTSUPPORTED; }
 
+ flag=0;
  ret=aaBifiVarGet(bififile,name,&var);
- if(ret==RET_NOTFOUND) { aaMemoryFill(&var,sizeof(_bifivar),0); }
+ if(ret==RET_NOTFOUND) { flag=1; aaMemoryFill(&var,sizeof(_bifivar),0); }
  else
  if(ret!=RET_YES)      { oops; }
 
  if((ret=aaDigestQuick(aa_DIGESTTYPE_Sha256,rdig,NULL,sl,name))!=RET_YES) { oops; }
  hp=(HP)&hash;
  hp[0]=*(HP)&rdig[0];
- hp[1]=*(HP)&rdig[4];
+ hp[1]=*(HP)&rdig[1];
  hi=hash%bififile->bifi_vars;
+ var.index=hi;
  off=hi*sizeof(_bifivar);
- aaTimeUtcExGet(&hi);
- hi=hi/1000000LL;
- var.update_utc=(H)hi;
+ off-=bififile->data_off;
+ if(flag==1)
+  {
+  if((ret=aaBifiRead(bififile,off,sizeof(_bifivar),&car))==YES)
+   {
+   if(car.name[0]!=0)
+    {
+    if(aaStringICompare(car.name,name,0)!=YES) { return RET_COLLISION; }
+    }
+   }
+  }
+ aaTimeUtcExGet(&var.update_utc);
+ //hi=hi/1000000LL;
+ //var.update_utc=(H)hi;
  var.update_counter++;
  aaStringCopy(var.name,name);
  aaMemoryCopy(var.data,bytes,data);
-
  //aaDebugf("%s about to call bifiwrite off=%I64d len=%i %I64d",var.name,off,sizeof(_bifivar),*(QP)var.data);
  if((ret=aaBifiWrite(bififile,off,sizeof(_bifivar),&var))!=YES) { oops; }
+
+
  return RET_YES;
  }
 
@@ -79768,14 +80791,11 @@ If lpOverlapped is not NULL, lpNumberOfBytesRead can be NULL. If this is an over
 
 
 
-
- B aaBifiVarGet                        (_bififile*bififile,VP name,_bifivar*bifivar)
+ B aaBifiVarByIndexGet                 (_bififile*bififile,Q index,_bifivar*bifivar)
  {
  B ret;
- H sl;
- B rdig[32];
- Q hash,hi,off;
- HP hp;
+ G off;
+ //B bit;
 
  #ifdef aa_VERSION
  aa_ZIAG(__FUNCTION__);
@@ -79783,6 +80803,151 @@ If lpOverlapped is not NULL, lpNumberOfBytesRead can be NULL. If this is an over
  objTest(bififile,aaBifiNew);
  if(bifivar==NULL) { return RET_BADPARM; }
  aaMemoryFill(bifivar,sizeof(_bifivar),0);
+ if(bififile->bifi_vars==0) { return RET_NOTSUPPORTED; }
+ if(index>=bififile->bifi_vars) { return RET_BOUNDS; }
+ off=index*sizeof(_bifivar);
+ off-=bififile->data_off;
+ if((ret=aaBifiRead(bififile,off,sizeof(_bifivar),bifivar))!=YES) { return ret; }
+ return RET_YES;
+ }
+
+
+
+
+
+ B aaBifiVarGet                        (_bififile*bififile,VP name,_bifivar*bifivar)
+ {
+ B ret;
+ H sl;
+ B rdig[32];
+ Q hash,hi;
+ G off;
+ HP hp;
+
+ #ifdef aa_VERSION
+ aa_ZIAG(__FUNCTION__);
+ #endif
+ objTest(bififile,aaBifiNew);
+ if(bifivar==NULL) { oof; return RET_BADPARM; }
+ aaMemoryFill(bifivar,sizeof(_bifivar),0);
+ if(name==NULL)   { oof; return RET_BADPARM; }
+ aaStringLen(name,&sl);
+ if(sl==0||sl>32) { oof; return RET_BADPARM; }
+ if(bififile->bifi_vars==0) { return RET_NOTSUPPORTED; }
+ if((ret=aaDigestQuick(aa_DIGESTTYPE_Sha256,rdig,NULL,sl,name))!=RET_YES) { oops; }
+ hp=(HP)&hash;
+ hp[0]=*(HP)&rdig[0];
+ hp[1]=*(HP)&rdig[1];
+ hi=hash%bififile->bifi_vars;
+ off=hi*sizeof(_bifivar);
+ off-=bififile->data_off;
+ if((ret=aaBifiRead(bififile,off,sizeof(_bifivar),bifivar))!=YES)
+  {
+  //oops;
+  bifivar->index=hi;
+  return ret;
+  }
+
+
+ if(aaStringICompare(bifivar->name,name,0)!=YES) { return RET_NOTFOUND; }
+ return RET_YES;
+ }
+
+
+
+
+ B aaBifiVarNumGet                     (_bififile*bififile,VP name,GP gv)
+ {
+ B ret;
+ H sl,count;
+ _bifivar var;
+ G v;
+
+ #ifdef aa_VERSION
+ aa_ZIAG(__FUNCTION__);
+ #endif
+ objTest(bififile,aaBifiNew);
+ if(gv==NULL) { return RET_MISSINGPARM; }
+ *gv=0;
+ if((ret=aaBifiVarGet(bififile,name,&var))!=RET_YES) { return ret; }
+ if(var.data[0]=='-')
+  {
+  if((ret=aaStringCountNumbers(&var.data[1],0,&count,YES))!=RET_YES) { oops; }
+  aaStringLen(&var.data[1],&sl);
+  if(sl!=count)    { oof; }
+  if((ret=aaStringToNumber(&var.data[1],sl,0,0,&v,0))!=RET_YES) { oops; }
+  v=aaNumNeg(v);
+  }
+ else
+  {
+  if((ret=aaStringCountNumbers(var.data,0,&count,YES))!=RET_YES) { oops; }
+  aaStringLen(var.data,&sl);
+  if(sl!=count)    { oof; }
+  if((ret=aaStringToNumber(var.data,sl,0,0,&v,0))!=RET_YES) { oops; }
+  }
+ *gv=v;
+ return RET_YES;
+ }
+
+
+
+ B aaBifiVarNumInc                     (_bififile*bififile,VP name,G by,GP gv)
+ {
+ B ret;
+ G val;
+
+ #ifdef aa_VERSION
+ aa_ZIAG(__FUNCTION__);
+ #endif
+ objTest(bififile,aaBifiNew);
+ if(name==NULL)   { return RET_BADPARM; }
+ if((ret=aaBifiVarNumGet(bififile,name,&val))!=YES)
+  {
+  if(ret!=RET_NOTFOUND) { oops; return ret;  }
+  val=0LL;
+  }
+ val+=by;
+ if((ret=aaBifiVarSetf(bififile,name,"%I64d",val))!=YES) { oops; return ret; }
+ if(gv==NULL) { return RET_YES; }
+ if((ret=aaBifiVarNumGet(bififile,name,gv))!=YES) { oops; return ret; }
+ return RET_YES;
+ }
+
+
+
+
+ B aaBifiVarNumSet                     (_bififile*bififile,VP name,G num)
+ {
+ B ret;
+
+ #ifdef aa_VERSION
+ aa_ZIAG(__FUNCTION__);
+ #endif
+ objTest(bififile,aaBifiNew);
+ if(name==NULL)   { return RET_BADPARM; }
+ if((ret=aaBifiVarSetf(bififile,name,"%I64d",num))!=YES) { oops; return ret; }
+ return RET_YES;
+ }
+
+
+
+
+
+ B aaBifiVarDelete                     (_bififile*bififile,VP name)
+ {
+ B ret;
+ H sl;
+ B rdig[32];
+ Q hash,hi;
+ G off;
+ HP hp;
+ _bifivar var;
+ //bit;
+
+ #ifdef aa_VERSION
+ aa_ZIAG(__FUNCTION__);
+ #endif
+ objTest(bififile,aaBifiNew);
  if(name==NULL)   { return RET_BADPARM; }
  aaStringLen(name,&sl);
  if(sl==0||sl>32) { return RET_BADPARM; }
@@ -79790,28 +80955,23 @@ If lpOverlapped is not NULL, lpNumberOfBytesRead can be NULL. If this is an over
  if((ret=aaDigestQuick(aa_DIGESTTYPE_Sha256,rdig,NULL,sl,name))!=RET_YES) { oops; }
  hp=(HP)&hash;
  hp[0]=*(HP)&rdig[0];
- hp[1]=*(HP)&rdig[4];
+ hp[1]=*(HP)&rdig[1];
  hi=hash%bififile->bifi_vars;
  off=hi*sizeof(_bifivar);
+ off-=bififile->data_off;
+ if((ret=aaBifiRead(bififile,off,sizeof(_bifivar),&var))!=YES) { return ret; }
+ if(aaStringICompare(var.name,name,0)!=YES) { return RET_NOTFOUND; }
+ aaMemoryFill(&var,sizeof(_bifivar),0);
+ if((ret=aaBifiWrite(bififile,off,sizeof(_bifivar),&var))!=YES) { oops; }
 
- //aaDebugf("%s about to call bifiRead off=%I64d len=%i",name,off,sizeof(_bifivar));
+ //off=bififile->bifi_vars*sizeof(_bifivar);
+ //off+=(var.index/8);
+ //if((ret=aaBifiRead(bififile,off,1,&bit))!=YES) { oops; }
+ //bit=aaBitClr(bit,var.index%8);
+ //if((ret=aaBifiWrite(bififile,off,1,&bit))!=YES) { oops; }
 
- if((ret=aaBifiRead(bififile,off,sizeof(_bifivar),bifivar))!=YES) { return ret; }
-
-// aaDebugf("=%I64d",*(QP)bifivar->data);
 
 
- if(aaStringICompare(bifivar->name,name,0)!=YES) { return RET_NOTFOUND; }
- /*
- if(aaStringIsNumerical(bifivar->data,YES,YES,0)==YES)
-  {
-  if(aaStringToDouble(bifivar->data,0,&bifinum->num)==YES)
-   {
-
-   }
-  bifinum->
-  }
- */
  return RET_YES;
  }
 
@@ -82272,9 +83432,9 @@ whatever is possible
   msi=ezy->info.display_info.monitor_smallest_index;
   mli=ezy->info.display_info.monitor_largest_index;
   aaSizeCopy(&s2,(_size*)&ezy->info.display_info.monitor_rect[msi].w);
-  aaSizeSet(&s2,s2.w*0.50,s2.h*0.50);
+  aaSizeSet(&s2,s2.w*0.25,s2.h*0.25);
   aaSizeCopy(&s3,(_size*)&ezy->info.display_info.monitor_rect[mli].w);
-  aaSizeSet(&s1,s2.w+(s2.w*0.25),s2.h+(s2.h*0.25));
+  aaSizeSet(&s1,s2.w+(s2.w*0.45),s2.h+(s2.h*0.45));
   s1.w=aaNumRoof(s1.w,ezy->info.display_info.monitor_rect[mpi].w);
   s1.h=aaNumRoof(s1.h,ezy->info.display_info.monitor_rect[mpi].h);
   if((ret=aaSurfaceMinMaxCreate(&ezy->surface.handle,&s1,&s2,&s3))!=YES) { oops; }
@@ -82304,9 +83464,11 @@ whatever is possible
   aaStatusGet(&ezy->status);
   aaSurfaceStatus(ezy->canvas.handle,&ezy->canvas.status);
   }
+ ///=-========
  if((aa_cycle%10)==0) { aaStatusGet(&ezy->status); }
  aaSurfaceStatus(ezy->surface.handle,&ezy->surface.status);
  aaTextboxYield(&ezy->text_box,&ezy->ie);
+ B nud=ezy->text_box.needs_paint;
  if(ezy->text_box.is_enter)
   {
   if((ret=aaQueWrite(ezy->text_que.handle,sizeof(_str4k),&ezy->text_box.str))!=YES) { oops; }
@@ -82320,30 +83482,33 @@ whatever is possible
    {
    aaSurfaceResizeCounterReset(ezy->surface.handle);
    aaRectSet(&r1,0,0,ezy->surface.status.size.w,45);
-   aaSurfaceClear(ezy->surface.handle,&col_pastelblue[4]);
-   aaSurfaceCaption(ezy->surface.handle,&r1,ezy->font[15].handle,0,0,0,ezy->surface.status.is_focus,"%s",ezy->surface.status.title);
+  // aaSurfaceClear(ezy->surface.handle,&col_pastelblue[4]);
+   aaSurfaceCaption(ezy->surface.handle,&r1,ezy->font[2].handle,0,0,0,ezy->surface.status.is_focus,"%s",ezy->surface.status.title);
    aaSurfaceUpdateAreaAdd(ezy->surface.handle,0,NO);
    aaSurfaceStatus(ezy->surface.handle,&ezy->surface.status);
-   aaRectSet(&r3,(r1.x+r1.w)-30,r1.y+6,20,20);
-   aaSurfaceCloseButton(ezy->surface.handle,&r3,NO,&col_null,&col_gray[22]);
-   aaRectCopy(&ezy->sysbut_rect[0],&r3);
-   aaRectAdjust(&r3,-30,0,0,0);
-   if(ezy->surface.status.is_maximized)    {    aaSurfaceRestoreButton(ezy->surface.handle,&r3,NO,&col_null,&col_gray[22]);    }
-   else                                    {    aaSurfaceMaximizeButton(ezy->surface.handle,&r3,NO,&col_null,&col_gray[22]);   }
-   aaRectCopy(&ezy->sysbut_rect[1],&r3);
-   aaRectAdjust(&r3,-30,0,0,0);
-   aaSurfaceMinimizeButton(ezy->surface.handle,&r3,NO,&col_null,&col_gray[22]);
-   aaRectCopy(&ezy->sysbut_rect[2],&r3);
+    aaRectSet(&r3,(r1.x+r1.w)-30,r1.y+6,25,25);
+    aaSurfaceCloseButton(ezy->surface.handle,&r3,NO,&col_null,&col_gray[25]);
+    aaRectCopy(&ezy->sysbut_rect[0],&r3);
+    aaRectAdjust(&r3,-30,0,0,0);
+    if(ezy->surface.status.is_maximized)    {    aaSurfaceRestoreButton(ezy->surface.handle,&r3,NO,&col_null,&col_gray[25]);    }
+    else                                    {    aaSurfaceMaximizeButton(ezy->surface.handle,&r3,NO,&col_null,&col_gray[25]);   }
+    aaRectCopy(&ezy->sysbut_rect[1],&r3);
+    aaRectAdjust(&r3,-30,0,0,0);
+    aaSurfaceMinimizeButton(ezy->surface.handle,&r3,NO,&col_null,&col_gray[22]);
+    aaRectCopy(&ezy->sysbut_rect[2],&r3);
    aaRectSet(&r1,5,ezy->surface.status.size.h-42,ezy->surface.status.max_size.w-10,40);
    aaTextboxRectSet(&ezy->text_box,&r1);
-   aaRectSet(&ezy->canvas_rect,0,46,ezy->surface.status.max_size.w,r1.y-48);
    }
-  aaRectSet(&r1,0,46,ezy->surface.status.size.w,ezy->surface.status.size.h-90);
-  aaRectSet(&r2,0,46,ezy->surface.status.size.w,ezy->surface.status.size.h-90);
+  aaRectSet(&r1,0,45,ezy->surface.status.size.w,ezy->surface.status.size.h-80);
+  aaRectSet(&r2,0,45,ezy->surface.status.size.w,ezy->surface.status.size.h-80);
+  aaRectSet(&r2,0,45,ezy->surface.status.rect.w,ezy->surface.status.rect.h-80);
+
   aaSurfaceImageDrawUsingSurface(ezy->surface.handle,&r1,ezy->canvas.handle,&r2,0,0,255);
-  if(ezy->text_box.magic!=0)  {  aaTextboxForcePaint(&ezy->text_box);     }
-  aaSurfaceUpdate(ezy->surface.handle);
-  if(ezy->surface.status.is_shown!=YES) { aaSurfaceShow(ezy->surface.handle,YES); }
+  aaRectCopy(&ezy->canvas_rect,&r2);
+  aaRectAdjust(&ezy->canvas_rect,0,-5,0,-5);
+  if(nud||ezy->text_box.magic!=0)              {   aaTextboxForcePaint(&ezy->text_box);    }
+  if(ezy->surface.status.update_area.state)    {   aaSurfaceUpdate(ezy->surface.handle);   }
+  if(ezy->surface.status.is_shown!=YES)        {   aaSurfaceShow(ezy->surface.handle,YES); }
   aaSurfaceStatus(ezy->surface.handle,&ezy->surface.status);
   ezy->is_focus=ezy->surface.status.is_focus;
   }
@@ -82361,7 +83526,7 @@ whatever is possible
   {
   if(ezy->surface.handle!=0&&ezy->ie.curr->focus_handle==ezy->surface.handle)  { aa_is_esc=YES;  }
   else
-  if(ezy->surface.handle==0)                                                 { aa_is_esc=YES;  }
+  if(ezy->surface.handle==0)                                                   { aa_is_esc=YES;  }
   }
  if(ezy->ie.is_ok)
   {
@@ -82378,7 +83543,8 @@ whatever is possible
      {
      aaSurfaceMaximize(ezy->surface.handle,TOGGLE);
      aaSurfaceStatus(ezy->surface.handle,&ezy->surface.status);
-     if(ezy->surface.status.is_maximized)
+     /*
+          if(ezy->surface.status.is_maximized)
       {
       if(aaSurfaceRequiresResize(ezy->surface.handle,&r1)==YES)
        {
@@ -82386,6 +83552,7 @@ whatever is possible
        aaSurfaceStatus(ezy->surface.handle,&ezy->surface.status);
        }
       }
+ */
      break;
      }
     if(aaCordIsWithinRect(&ezy->ie.curr->focus_cord,&ezy->sysbut_rect[2])==YES)
@@ -82399,7 +83566,7 @@ whatever is possible
    }
   }
 
- if(aa_is_esc) { aaQuit(); return RET_NO; }
+ if(aa_is_esc) { aaQuit(); }///return RET_NO; }
  return RET_YES;
  }
 
@@ -82426,17 +83593,60 @@ whatever is possible
  }
 
 
- B aaEzyLog                            (_ezy*ezy,VP fmt,...)
+
+ B aaEzyLabel                          (_ezy*ezy,H fontindex,N x,N y,N w,N h,N bg,N fg,N xadj,N yadj,N ha,N va,H maxchars,VP fmt,...)
+ {
+ _rect r1;
+
+ #ifdef aa_VERSION
+ aa_ZIAG(__FUNCTION__);
+ #endif
+ //for(i=0;i<50;i++)    {    aaEzyLabel(&ezy,3,0,i*30,0,30,72,80,0,0,0,0,0,"%I64d",aaMsRunning());    }
+ objTest(ezy,aaEzyYield);
+ aaVargsf4K(fmt);
+ x+=ezy->canvas_rect.x;
+ y+=ezy->canvas_rect.y;
+ if(w<=0)  {  w=ezy->canvas_rect.w+w-x;  }
+ if(h<=0)  {  h=ezy->canvas_rect.h+h-y;  }
+ aaRectSet(&r1,x,y,w,h);
+ aaSurfaceLabel(ezy->canvas.handle,&r1,col_map[bg],ezy->font[fontindex%16].handle,col_map[fg],xadj,yadj,ha,va,maxchars,"%s",str4k.buf);
+ aaEzyUpdate(ezy,&r1);
+ return RET_YES;
+ }
+
+
+ B aaEzyLog                            (_ezy*ezy,H fontindex,VP fmt,...)
+ {
+ #ifdef aa_VERSION
+ aa_ZIAG(__FUNCTION__);
+ #endif
+ objTest(ezy,aaEzyYield);
+ fontindex%=16;
+ aaVargsf(fmt);
+ //aaVargsf4K(fmt);
+ aaSurfaceLog(ezy->canvas.handle,&ezy->canvas_rect,&col_gray[2],ezy->font[fontindex].handle,&col_gray[24],"%s",str64k.buf);
+// aaDebugf("%s",str4k.buf);
+ aaEzyUpdate(ezy,&ezy->canvas_rect);
+ return RET_YES;
+ }
+
+
+
+
+ B aaEzyTitleSet                       (_ezy*ezy,VP fmt,...)
  {
  #ifdef aa_VERSION
  aa_ZIAG(__FUNCTION__);
  #endif
  objTest(ezy,aaEzyYield);
  aaVargsf4K(fmt);
- aaSurfaceLog(ezy->canvas.handle,&ezy->canvas_rect,&col_gray[2],ezy->font[3].handle,&col_gray[24],"%s",str4k.buf);
- aaEzyUpdate(ezy,&ezy->canvas_rect);
+ aaSurfaceTitleSet(ezy->surface.handle,"%s",str4k.buf);
+ aaSurfaceResizeCounterSet(ezy->surface.handle);
+ aaSurfaceStatus(ezy->surface.handle,&ezy->surface.status);
  return RET_YES;
  }
+
+
 
 
 
@@ -85710,9 +86920,11 @@ size_t mbedtls_mpi_bitlen( const mbedtls_mpi *X )
  if((ret=aaDigestCreate(&entropypool->digest.handle,aa_DIGESTTYPE_Sha512))!=YES) { oops; return ret; }
  aaDigestStatus(entropypool->digest.handle,&entropypool->digest.status);
  entropypool->hard[0]=aaHardCounter();
- entropypool->hard[1]=aaRtdscGet();
- aaEntropyPoolWrite(entropypool,8,&entropypool->hard[0]);
  aaInfoGet(&info);
+ entropypool->hard[1]=aaRtdscGet();
+ entropypool->mixx[0]=aaRtdscGet()%30;
+ entropypool->mixx[1]=((entropypool->hard[0]+entropypool->hard[1])%20)+1;
+ aaEntropyPoolWrite(entropypool,8,&entropypool->hard[0]);
  aaEntropyPoolWrite(entropypool,sizeof(info),&info);
  aaStatusGet(&status);
  aaEntropyPoolWrite(entropypool,sizeof(status),&status);
@@ -85758,7 +86970,7 @@ size_t mbedtls_mpi_bitlen( const mbedtls_mpi *X )
  v0=bp[0];
  v1=bp[1+(v0%63)];
  go=((v0+v1)>>4);
- go=go+(v0%11)+1;
+ go=(go%5)+(v0%11)+1;
  aaMemoryCopy(dig,64,entropypool->digest.status.digest);
  while(go--)
   {
@@ -85773,7 +86985,7 @@ size_t mbedtls_mpi_bitlen( const mbedtls_mpi *X )
  tot=hard_dif[0]+hard_dif[1];
  if(aaDigestWrite(entropypool->digest.handle,8,&tot,NO,NULL,NULL)!=YES) { oof; }
  go=(H)hard;
- if((go%5)==0)
+ if(go>0&&(go%5)==0)
   {
   while(go--)
    {
@@ -85795,6 +87007,7 @@ size_t mbedtls_mpi_bitlen( const mbedtls_mpi *X )
  {
  H off,todo,cando;
  BP bp;
+ Q mod;
 
  #ifdef aa_VERSION
  aa_ZIAG(__FUNCTION__);
@@ -85810,11 +87023,21 @@ size_t mbedtls_mpi_bitlen( const mbedtls_mpi *X )
   {
   cando=todo-off;
   if(cando==0) { break; }
-  if(cando>64) { cando=64; }
+  if(cando>222) { cando=222; }
+  entropypool->mixx[0]+=cando;
+  if(entropypool->mixx[0]>entropypool->mixx[1])
+   {
+   mod=entropypool->mixx[0]-entropypool->mixx[1];
+   mod=mod%255;
+   aaEntropyPoolWrite(entropypool,1,(BP)&mod);
+   entropypool->mixx[0]=(mod+entropypool->mixx[1])%255LL;
+   entropypool->mixx[1]=mod;
+   }
   aaMemoryCopy(&bp[off],cando,&entropypool->digest.status.digest[0]);
   aaEntropyPoolWrite(entropypool,(bp[off]%32)+1,&bp[off]);
   off+=cando;
   }
+
  return RET_YES;
  }
 

@@ -125,6 +125,10 @@
  #define xstructn(strct,n)             _##strct; _##strct strct[n]
  #define xstrux(strct)                 _##strct strct
 
+ #define sxstruct(strct)               _##strct; S _##strct strct
+ #define sxstructn(strct,n)            _##strct; S _##strct strct[n]
+ #define sxstrux(strct)                S _##strct strct
+
  #define aaMultiLine(...)              #__VA_ARGS__
  #define aaCString(vstr,vbody)         CP vstr=#vbody
  #define aaBString(vstr,vbody)         BP vstr=#vbody
@@ -756,6 +760,10 @@
                                        aaFmt(format,argptr,str4k.buf);              \
                                        aaStringLen(str4k.buf,&str4k.len);
 
+ #define aaVargsf8K(format)            va_list argptr;                              \
+                                       _str8k str8k={.buf[0]=NULL_CHAR,.len=0};     \
+                                       aaFmt(format,argptr,str8k.buf);              \
+                                       aaStringLen(str8k.buf,&str8k.len);
 
 
  #define aaMissingParm(x)              if(x==NULL) { oof; return RET_BADPARM; }
@@ -976,6 +984,7 @@
  B aaRestart                           (V);
  B aaReboot                            (B force);
  B aaProcessorCoreSet                  (H core);
+ B aaCoreEntropy                       (H bytes,VP data);
  B aaRoutineAdd                        (V(*ProcYield)(VP),VP yparm,V(*ProcStop)(VP),VP sparm);
  B aaCopyDataProcSet                   (V(*CopyDataProc)(HWND,HWND,H,H,VP));
  B aaCopyDataPost                      (HWND from,HWND to,H ms,H data,H bytes,VP buf);
@@ -1017,6 +1026,7 @@
 
  B aaTickNew                           (_tick*tick,H count);
  B aaTickDelete                        (_tick*tick,H count);
+ B aaTickUpdate                        (_tick*tick,H count);
  B aaTickReset                         (_tick*tick);
  B aaTickAdjust                        (_tick*tick,G ms);
  G aaTickGet                           (_tick*tick);
@@ -1926,6 +1936,7 @@ VP aaf                                (VP buf,H off,VP fmt,...);
  PUB _size aa_size_640x480;
  PUB _size aa_size_800x600;
  PUB _size aa_size_1024x768;
+ PUB _size aa_size_1920x1080;
 
 ///------------------------------------------
 
@@ -2158,6 +2169,24 @@ VP aaf                                (VP buf,H off,VP fmt,...);
 
 
 /*-----------------------------------------------------------------------*/
+
+ structure
+ {
+ H magic;
+ B is_mutex;
+ HANDLE handle;
+ }
+ _sync;
+
+ B aaSyncNew                           (_sync*sync,H initialcount,H maxcount,VP fmt,...);
+ B aaSyncDelete                        (_sync*sync);
+ B aaSyncLock                          (_sync*sync);
+ B aaSyncUnlock                        (_sync*sync,N unlockcount,NP prevunlockcount);
+
+/*-----------------------------------------------------------------------*/
+
+
+
 
  structure
  {
@@ -3867,7 +3896,7 @@ VP aaf                                (VP buf,H off,VP fmt,...);
  B aaTorRefresh                        (_tor*tor);
  B aaTorKill                           (_tor*tor,H index);
  B aaTorLaunch                         (_tor*tor,W cport,W sport);
- B aaTorFind                           (_tor*tor,W cport,W sport,HP index);
+ B aaTorFind                           (_tor*tor,W cport,W sport,HP index,QP age);
 
 
 
@@ -4072,7 +4101,7 @@ VP aaf                                (VP buf,H off,VP fmt,...);
  B is_vflip;
  B is_minimized;
  B is_maximized;
- C title[65];
+ C title[129];
  B is_rounded;
  B is_blend;
  B is_clipper;
@@ -4259,6 +4288,7 @@ VP aaf                                (VP buf,H off,VP fmt,...);
  B aaSurfaceEllipseFill                (H handle,_rect*rect,_rgba*p1);
  B aaSurfaceEllipseFillFrame           (H handle,_rect*rect,N thick,_rgba*p1,_rgba*p2);
  B aaSurfaceFloodFill                  (H handle,_rect*r1,_cord*c1,_rgba*p1);
+ B aaSurfaceBezier                     (H handle,_cord*c0,_cord*c1,_cord*c2,D weight,_rgba*p1);
  B aaSurfaceArc                        (H handle,_rect*rect,N astart,N astop,N arot,_rgba*p1);
  B aaSurfaceRoundedFrame               (H handle,_rect*rect,N r,_rgba*p1);
  B aaSurfaceRoundedFill                (H handle,_rect*rect,N r,_rgba*p1);
@@ -4340,6 +4370,74 @@ VP aaf                                (VP buf,H off,VP fmt,...);
 
  B aaImageRotate                       (_size*imgsize,VP img,_size*dimgsize,VP dimg,D angle);
 
+/*-----------------------------------------------------------------------*/
+
+ #define TweenEase_BackIn              0
+ #define TweenEase_BackOut             1
+ #define TweenEase_BackInOut           2
+ #define TweenEase_BounceIn            3
+ #define TweenEase_BounceOut           4
+ #define TweenEase_BounceInOut         5
+ #define TweenEase_CircIn              6
+ #define TweenEase_CircOut             7
+ #define TweenEase_CircInOut           8
+ #define TweenEase_CubicIn             9
+ #define TweenEase_CubicOut            10
+ #define TweenEase_CubicInOut          11
+ #define TweenEase_ElasticIn           12
+ #define TweenEase_ElasticOut          13
+ #define TweenEase_ElasticInOut        14
+ #define TweenEase_ExpoIn              15
+ #define TweenEase_ExpoOut             16
+ #define TweenEase_ExpoInOut           17
+ #define TweenEase_LinearIn            18
+ #define TweenEase_LinearOut           19
+ #define TweenEase_LinearInOut         20
+ #define TweenEase_QuadIn              21
+ #define TweenEase_QuadOut             22
+ #define TweenEase_QuadInOut           23
+ #define TweenEase_QuartIn             24
+ #define TweenEase_QuartOut            25
+ #define TweenEase_QuartInOut          26
+ #define TweenEase_QuintIn             27
+ #define TweenEase_QuintOut            28
+ #define TweenEase_QuintInOut          29
+ #define TweenEase_SineIn              30
+ #define TweenEase_SineOut             31
+ #define TweenEase_SineInOut           32
+
+
+ structure
+ {
+ H magic;
+ Z state;
+ D time;
+ D duration;
+ Z loop;
+ }
+ _tweentimer;
+
+
+ structure
+ {
+ H magic;
+ D num;
+ D percent;
+ _tweentimer t;
+ _tweentimer d;
+ D start;
+ D delta;
+ B ease;
+ D(*ease_proc)(D,D,D,D);
+ }
+ _tween;
+
+ B aaTweenInit                         (_tween*tween,B ease,D start,D delta,D duration,D delay,Z loop);
+ B aaTweenPlay                         (_tween*tween);
+ B aaTweenPause                        (_tween*tween);
+ B aaTweenStop                         (_tween*tween);
+ B aaTweenFinished                     (_tween*tween);
+ B aaTweenUpdate                       (_tween*tween);
 
 
 /*-----------------------------------------------------------------------*/
@@ -5323,6 +5421,7 @@ VP aaf                                (VP buf,H off,VP fmt,...);
  B aaDirWalkerCreate                   (HP handle,VP root,VP spec,B incfiles,H maxdepth,B(*proc)(H,VP,_dirwalkerstatus*,_direntry*));
  B aaDirWalkerDestroy                  (H handle);
  B aaDirWalkerStatus                   (H handle,_dirwalkerstatus*dirwalkerstatus,H iterationsa,H iterationsb);
+ B aaDirWalkerProc                     (H handle,VP file,_dirwalkerstatus*dirwalkerstatus,_direntry*direntry);
 
 /*-----------------------------------------------------------------------*/
 
@@ -5786,13 +5885,27 @@ VP aaf                                (VP buf,H off,VP fmt,...);
  B aaCryptoChaCha20Decrypt             (_chacha20*chacha20,BP in,BP out,H len);
 
 /*-----------------------------------------------------------------------*/
+/*
+ structure
+ {
+ H state;
+ _systime created;
+ _systime modified;
+ _systime accessed;
+ Q bytes;
+ Q offset;
+ B name[257];
+ }
+ _bifivfile;
+*/
 
 
  structure
  {
+ Q index;
  B name[32];
- H update_utc;
- H update_counter;
+ Q update_utc;
+ Q update_counter;
  B data[32];
  }
  _bifivar;
@@ -5817,12 +5930,18 @@ VP aaf                                (VP buf,H off,VP fmt,...);
 
  B aaBifiNew                           (_bififile*bififile,G clx,H fsu,Q bifisize,Q bifivars,VP prefix,VP path,...);
  B aaBifiDelete                        (_bififile*bififile);
- B aaBifiRead                          (_bififile*bififile,Q off,Q len,VP data);
- B aaBifiWritef                        (_bififile*bififile,Q off,QP len,VP fmt,...);
- B aaBifiWrite                         (_bififile*bififile,Q off,Q len,VP data);
+ B aaBifiRead                          (_bififile*bififile,G off,Q len,VP data);
+ B aaBifiWritef                        (_bififile*bififile,G off,QP len,VP fmt,...);
+ B aaBifiWrite                         (_bififile*bififile,G off,Q len,VP data);
+ B aaBifiCopy                          (_bififile*bififile,G off,G doff,Q len);
  B aaBifiVarSet                        (_bififile*bififile,VP name,H bytes,VP data);
  B aaBifiVarSetf                       (_bififile*bififile,VP name,VP fmt,...);
+ B aaBifiVarByIndexGet                 (_bififile*bififile,Q index,_bifivar*bifivar);
  B aaBifiVarGet                        (_bififile*bififile,VP name,_bifivar*bifivar);
+ B aaBifiVarNumGet                     (_bififile*bififile,VP name,GP gv);
+ B aaBifiVarNumInc                     (_bififile*bififile,VP name,G by,GP gv);
+ B aaBifiVarNumSet                     (_bififile*bififile,VP name,G num);
+ B aaBifiVarDelete                     (_bififile*bififile,VP name);
 
 /*-----------------------------------------------------------------------*/
 
@@ -6220,31 +6339,6 @@ VP aaf                                (VP buf,H off,VP fmt,...);
 
 /*-----------------------------------------------------------------------*/
 
- structure
- {
- H magic;
- B is_focus;
- _inputengine ie;
- _info info;
- _status status;
- _fontunit font[16];
- _rect sysbut_rect[3];
- _surfaceunit surface;
- _rect canvas_rect;
- _surfaceunit canvas;
- _textbox text_box;
- _queunit text_que;
- }
- _ezy;
-
- B aaEzyYield                          (_ezy*ezy);
- B aaEzyTextRead                       (_ezy*ezy,_str4k*str);
- B aaEzyLog                            (_ezy*ezy,VP fmt,...);
- B aaEzyUpdate                         (_ezy*ezy,_rect*rect);
-
-
-
-/*-----------------------------------------------------------------------*/
 
  #define aa_BIGINT_DATA_BITS           32
  #define aa_BIGINT_BITS_TO_SIZE(b)     (((b)+aa_BIGINT_DATA_BITS-1)/aa_BIGINT_DATA_BITS)
@@ -6396,6 +6490,7 @@ VP aaf                                (VP buf,H off,VP fmt,...);
  H magic;
  _digestunit digest;
  Q hard[2];
+ Q mixx[2];
  }
  _entropypool;
 
@@ -6405,7 +6500,36 @@ VP aaf                                (VP buf,H off,VP fmt,...);
  B aaEntropyPoolWrite                  (_entropypool*entropypool,H bytes,VP data);
  B aaEntropyPoolRead                   (_entropypool*entropypool,H bytes,VP data);
 
+/*-----------------------------------------------------------------------*/
 
+
+ structure
+ {
+ H magic;
+ B is_focus;
+ _inputengine ie;
+ _info info;
+ _status status;
+ _fontunit font[16];
+ _rect sysbut_rect[3];
+ _surfaceunit surface;
+ _rect canvas_rect;
+ _surfaceunit canvas;
+ _textbox text_box;
+ _queunit text_que;
+ }
+ _ezy;
+
+ B aaEzyYield                          (_ezy*ezy);
+ B aaEzyTextRead                       (_ezy*ezy,_str4k*str);
+ B aaEzyLabel                          (_ezy*ezy,H fontindex,N x,N y,N w,N h,N bg,N fg,N xadj,N yadj,N ha,N va,H maxchars,VP fmt,...);
+ B aaEzyLog                            (_ezy*ezy,H fontindex,VP fmt,...);
+ B aaEzyTitleSet                       (_ezy*ezy,VP fmt,...);
+ B aaEzyUpdate                         (_ezy*ezy,_rect*rect);
+
+
+
+/*-----------------------------------------------------------------------*/
 
 /*-----------------------------------------------------------------------*/
  #ifdef __cplusplus
